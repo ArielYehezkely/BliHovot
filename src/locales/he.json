@@ -1,0 +1,94 @@
+{
+  "common": {
+    "appName": "בלי חובות",
+    "loading": "טוען...",
+    "save": "שמור",
+    "cancel": "ביטול",
+    "confirm": "אישור",
+    "back": "חזרה",
+    "close": "סגור",
+    "error": "משהו השתבש",
+    "retry": "נסה שוב",
+    "noResults": "לא נמצאו תוצאות"
+  },
+  "auth": {
+    "title": "בלי חובות",
+    "subtitle": "עוקבים אחרי חובות עם חברים — בקלות!",
+    "signInGoogle": "התחברות עם Google",
+    "signInMicrosoft": "התחברות עם Microsoft",
+    "signingIn": "מתחבר...",
+    "signOut": "התנתקות"
+  },
+  "onboarding": {
+    "title": "!ברוכים הבאים 🎉",
+    "subtitle": "בואו נגדיר את הפרופיל שלכם",
+    "phoneLabel": "מספר טלפון",
+    "phonePlaceholder": "050-123-4567",
+    "phoneHint": "מספר הטלפון שלך הוא הדרך שחברים ימצאו אותך באפליקציה",
+    "verifyButton": "שלח קוד אימות",
+    "codeLabel": "קוד אימות",
+    "codePlaceholder": "123456",
+    "verifyCodeButton": "אמת",
+    "nameLabel": "שם תצוגה",
+    "currencyLabel": "מטבע ברירת מחדל",
+    "completeButton": "!יאללה 🚀"
+  },
+  "home": {
+    "greeting": "היי, {{name}}!",
+    "summary": "סיכום היתרות שלך",
+    "youOwe": "אתה חייב",
+    "owedToYou": "חייבים לך",
+    "allSettled": "!הכל מסודר 🎉",
+    "allSettledDesc": "אין לך חובות פתוחים",
+    "addDebt": "הוספת חוב",
+    "totalBalance": "יתרה כוללת"
+  },
+  "contacts": {
+    "title": "אנשי קשר",
+    "searchPlaceholder": "חיפוש אנשי קשר...",
+    "owesYou": "חייב/ת לך",
+    "youOwe": "אתה חייב",
+    "settled": "מסודר ✓",
+    "pickContact": "בחירה מאנשי הקשר",
+    "enterPhone": "הזנת מספר טלפון",
+    "notOnApp": "האדם הזה עדיין לא באפליקציה",
+    "selectContact": "בחירת איש קשר"
+  },
+  "userDetail": {
+    "debtHistory": "היסטוריה",
+    "addDebt": "אני חייב להם",
+    "markPayment": "סימון תשלום שהתקבל",
+    "noHistory": "אין עסקאות עדיין",
+    "youOweThem": "אתה חייב להם",
+    "theyOweYou": "הם חייבים לך",
+    "settled": "!הכל מסודר ✓",
+    "debtAdded": "הוסיף/ה חוב",
+    "paymentMarked": "סימן/ה תשלום"
+  },
+  "debtForm": {
+    "title": "הוספת חוב",
+    "paymentTitle": "סימון תשלום",
+    "amountLabel": "סכום",
+    "amountPlaceholder": "0.00",
+    "currencyLabel": "מטבע",
+    "descriptionLabel": "בשביל מה?",
+    "descriptionPlaceholder": "ארוחת ערב, קפה, כרטיסים...",
+    "submitDebt": "הוספת חוב",
+    "submitPayment": "סימון כשולם"
+  },
+  "notifications": {
+    "title": "התראות",
+    "empty": "אין התראות עדיין",
+    "debtAdded": "{{name}} הוסיף/ה חוב של {{amount}} {{currency}}",
+    "debtReduced": "{{name}} סימן/ה תשלום של {{amount}} {{currency}}",
+    "markAllRead": "סימון הכל כנקרא"
+  },
+  "settings": {
+    "title": "הגדרות",
+    "language": "שפה",
+    "currency": "מטבע ברירת מחדל",
+    "notifications": "התראות Push",
+    "about": "אודות",
+    "version": "גרסה"
+  }
+}

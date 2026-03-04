@@ -1,0 +1,94 @@
+{
+  "common": {
+    "appName": "BliHovot",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "back": "Back",
+    "close": "Close",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "noResults": "No results found"
+  },
+  "auth": {
+    "title": "BliHovot",
+    "subtitle": "Track debts with friends — the fun way!",
+    "signInGoogle": "Sign in with Google",
+    "signInMicrosoft": "Sign in with Microsoft",
+    "signingIn": "Signing in...",
+    "signOut": "Sign out"
+  },
+  "onboarding": {
+    "title": "Welcome! 🎉",
+    "subtitle": "Let's set up your profile",
+    "phoneLabel": "Phone Number",
+    "phonePlaceholder": "+972 50 123 4567",
+    "phoneHint": "Your phone number is how friends find you on BliHovot",
+    "verifyButton": "Send verification code",
+    "codeLabel": "Verification Code",
+    "codePlaceholder": "123456",
+    "verifyCodeButton": "Verify",
+    "nameLabel": "Display Name",
+    "currencyLabel": "Default Currency",
+    "completeButton": "Let's go! 🚀"
+  },
+  "home": {
+    "greeting": "Hey, {{name}}!",
+    "summary": "Your balance overview",
+    "youOwe": "You owe",
+    "owedToYou": "Owed to you",
+    "allSettled": "All settled! 🎉",
+    "allSettledDesc": "You have no outstanding debts",
+    "addDebt": "Add Debt",
+    "totalBalance": "Net Balance"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "searchPlaceholder": "Search contacts...",
+    "owesYou": "owes you",
+    "youOwe": "you owe",
+    "settled": "Settled ✓",
+    "pickContact": "Pick from contacts",
+    "enterPhone": "Enter phone number",
+    "notOnApp": "This person isn't on BliHovot yet",
+    "selectContact": "Select a contact"
+  },
+  "userDetail": {
+    "debtHistory": "History",
+    "addDebt": "I owe them",
+    "markPayment": "Mark payment received",
+    "noHistory": "No transactions yet",
+    "youOweThem": "You owe them",
+    "theyOweYou": "They owe you",
+    "settled": "You're all settled! ✓",
+    "debtAdded": "added a debt",
+    "paymentMarked": "marked a payment"
+  },
+  "debtForm": {
+    "title": "Add Debt",
+    "paymentTitle": "Mark Payment",
+    "amountLabel": "Amount",
+    "amountPlaceholder": "0.00",
+    "currencyLabel": "Currency",
+    "descriptionLabel": "What's it for?",
+    "descriptionPlaceholder": "Dinner, coffee, tickets...",
+    "submitDebt": "Add Debt",
+    "submitPayment": "Mark as Paid"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "debtAdded": "{{name}} added a debt of {{amount}} {{currency}}",
+    "debtReduced": "{{name}} marked a payment of {{amount}} {{currency}}",
+    "markAllRead": "Mark all as read"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "currency": "Default Currency",
+    "notifications": "Push Notifications",
+    "about": "About",
+    "version": "Version"
+  }
+}
