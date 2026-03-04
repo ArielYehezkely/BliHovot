@@ -5,10 +5,9 @@ import { motion } from 'framer-motion'
 import { parsePhoneNumberFromString } from 'libphonenumber-js'
 import { useAuthStore } from '../stores/authStore'
 import { createProfile } from '../lib/api'
-import { supabase } from '../lib/supabase'
 import { CURRENCIES } from '../types'
 
-type Step = 'phone' | 'verify' | 'profile'
+type Step = 'phone' | 'profile'
 
 export function OnboardingPage() {
   const { t, i18n } = useTranslation()
@@ -18,7 +17,7 @@ export function OnboardingPage() {
 
   const [step, setStep] = useState<Step>('phone')
   const [phone, setPhone] = useState('')
-  const [otp, setOtp] = useState('')
+  const [formattedPhone, setFormattedPhone] = useState('')
   const [displayName, setDisplayName] = useState(
     session?.user?.user_metadata?.full_name ?? ''
   )
@@ -28,47 +27,15 @@ export function OnboardingPage() {
 
   const isHebrew = i18n.language === 'he'
 
-  const handleSendOtp = async () => {
+  const handlePhoneSubmit = () => {
     setError('')
     const parsed = parsePhoneNumberFromString(phone, 'IL')
     if (!parsed?.isValid()) {
-      setError('Please enter a valid phone number')
+      setError(isHebrew ? 'נא להזין מספר טלפון תקין' : 'Please enter a valid phone number')
       return
     }
-
-    setIsLoading(true)
-    try {
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        phone: parsed.format('E.164'),
-      })
-      if (otpError) throw otpError
-      setPhone(parsed.format('E.164'))
-      setStep('verify')
-    } catch (err) {
-      console.error(err)
-      setError(t('common.error'))
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleVerifyOtp = async () => {
-    setError('')
-    setIsLoading(true)
-    try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        phone,
-        token: otp,
-        type: 'sms',
-      })
-      if (verifyError) throw verifyError
-      setStep('profile')
-    } catch (err) {
-      console.error(err)
-      setError(t('common.error'))
-    } finally {
-      setIsLoading(false)
-    }
+    setFormattedPhone(parsed.format('E.164'))
+    setStep('profile')
   }
 
   const handleComplete = async () => {
@@ -78,7 +45,7 @@ export function OnboardingPage() {
     try {
       const profile = await createProfile({
         id: session.user.id,
-        phone_number: phone,
+        phone_number: formattedPhone,
         display_name: displayName.trim() || 'User',
         avatar_url: session.user.user_metadata?.avatar_url ?? null,
         language: i18n.language as 'he' | 'en',
@@ -109,11 +76,11 @@ export function OnboardingPage() {
 
         {/* Step indicator */}
         <div className="flex justify-center gap-2 mb-8">
-          {(['phone', 'verify', 'profile'] as Step[]).map((s, i) => (
+          {(['phone', 'profile'] as Step[]).map((s, i) => (
             <div
               key={s}
               className={`h-1.5 rounded-full transition-all ${
-                step === s ? 'w-8 bg-coral' : i < ['phone', 'verify', 'profile'].indexOf(step) ? 'w-6 bg-mint' : 'w-6 bg-gray-200'
+                step === s ? 'w-8 bg-coral' : i < (['phone', 'profile'] as Step[]).indexOf(step) ? 'w-6 bg-mint' : 'w-6 bg-gray-200'
               }`}
             />
           ))}
@@ -142,43 +109,11 @@ export function OnboardingPage() {
               <p className="text-xs text-text-muted mt-1.5">{t('onboarding.phoneHint')}</p>
             </div>
             <button
-              onClick={handleSendOtp}
-              disabled={isLoading || !phone}
+              onClick={handlePhoneSubmit}
+              disabled={!phone}
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-coral to-coral-light text-white font-semibold shadow-lg shadow-coral/25 transition-all active:scale-[0.98] disabled:opacity-50"
             >
-              {isLoading ? t('common.loading') : t('onboarding.verifyButton')}
-            </button>
-          </motion.div>
-        )}
-
-        {/* Verify step */}
-        {step === 'verify' && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="space-y-4"
-          >
-            <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
-                {t('onboarding.codeLabel')}
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder={t('onboarding.codePlaceholder')}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none text-center text-2xl tracking-[0.5em] font-mono transition-all"
-                dir="ltr"
-                autoFocus
-              />
-            </div>
-            <button
-              onClick={handleVerifyOtp}
-              disabled={isLoading || otp.length < 6}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-coral to-coral-light text-white font-semibold shadow-lg shadow-coral/25 transition-all active:scale-[0.98] disabled:opacity-50"
-            >
-              {isLoading ? t('common.loading') : t('onboarding.verifyCodeButton')}
+              {t('common.next') || 'Next'}
             </button>
           </motion.div>
         )}

@@ -9,7 +9,8 @@
     "close": "Close",
     "error": "Something went wrong",
     "retry": "Try again",
-    "noResults": "No results found"
+    "noResults": "No results found",
+    "next": "Next"
   },
   "auth": {
     "title": "BliHovot",
