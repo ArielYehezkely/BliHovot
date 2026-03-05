@@ -20,7 +20,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[60]"
           />
 
           {/* Modal */}
@@ -29,9 +29,9 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 max-h-[85dvh] overflow-auto"
+            className="fixed bottom-0 left-0 right-0 z-[60] max-h-[90dvh] overflow-auto"
           >
-            <div className="bg-white rounded-t-3xl shadow-xl p-6 max-w-lg mx-auto">
+            <div className="bg-white rounded-t-3xl shadow-xl p-6 pb-8 max-w-lg mx-auto">
               {/* Handle bar */}
               <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
 

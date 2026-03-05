@@ -53,9 +53,10 @@ export function ContactPicker({ isOpen, onClose, onSelectUser }: ContactPickerPr
     }
   }
 
+  const isContactPickerSupported = 'contacts' in navigator && 'ContactsManager' in window
+
   const handlePickContact = async () => {
-    // Check if Contact Picker API is available
-    if ('contacts' in navigator && 'ContactsManager' in window) {
+    if (isContactPickerSupported) {
       try {
         const contacts = await (navigator as ContactsNavigator).contacts.select(
           ['tel', 'name'],
@@ -68,12 +69,8 @@ export function ContactPicker({ isOpen, onClose, onSelectUser }: ContactPickerPr
           }
         }
       } catch {
-        // User cancelled or API not supported
+        // User cancelled
       }
-    } else {
-      // Fallback - focus the phone input
-      const input = document.getElementById('phone-input')
-      input?.focus()
     }
   }
 
@@ -87,21 +84,25 @@ export function ContactPicker({ isOpen, onClose, onSelectUser }: ContactPickerPr
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t('contacts.selectContact')}>
       <div className="space-y-4">
-        {/* Contact picker button */}
-        <button
-          onClick={handlePickContact}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-lavender/10 text-lavender-dark font-medium hover:bg-lavender/20 transition-colors"
-        >
-          <UserPlus size={18} />
-          {t('contacts.pickContact')}
-        </button>
+        {/* Contact picker button - only shown when browser supports Contact Picker API */}
+        {isContactPickerSupported && (
+          <>
+            <button
+              onClick={handlePickContact}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-lavender/10 text-lavender-dark font-medium hover:bg-lavender/20 transition-colors"
+            >
+              <UserPlus size={18} />
+              {t('contacts.pickContact')}
+            </button>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-xs text-text-muted font-medium">{t('contacts.enterPhone')}</span>
-          <div className="flex-1 h-px bg-gray-200" />
-        </div>
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-xs text-text-muted font-medium">{t('contacts.enterPhone')}</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+          </>
+        )}
 
         {/* Phone search */}
         <div className="flex gap-2">

@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { getProfile, subscribeToTransactions, subscribeToNotifications } from './lib/api'
 import { useAuthStore } from './stores/authStore'
+import type { Profile, Notification } from './types'
 import { useNotificationStore } from './stores/notificationStore'
 import { LoginPage } from './pages/LoginPage'
 import { OnboardingPage } from './pages/OnboardingPage'
@@ -17,6 +18,19 @@ import { UserDetailPage } from './pages/UserDetailPage'
 import { NotificationsPage } from './pages/NotificationsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import './locales/i18n'
+
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+
+const DEV_PROFILE: Profile = {
+  id: 'dev-user-00000000-0000-0000-0000-000000000000',
+  phone_number: '+972501234567',
+  display_name: 'Dev User',
+  avatar_url: null,
+  language: 'en',
+  preferred_currency: 'ILS',
+  push_subscription: null,
+  created_at: new Date().toISOString(),
+}
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const session = useAuthStore((s) => s.session)
@@ -32,6 +46,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     )
+  }
+
+  // Skip auth on localhost
+  if (isLocalhost) {
+    return <>{children}</>
   }
 
   if (!session) {
@@ -76,6 +95,14 @@ function App() {
     const initAuth = async () => {
       setLoading(true)
       try {
+        // On localhost, set a mock session & profile to skip login
+        if (isLocalhost) {
+          console.info('Running on localhost – using dev profile, skipping auth')
+          setSession({ user: { id: DEV_PROFILE.id } } as any)
+          setProfile(DEV_PROFILE)
+          return
+        }
+
         if (!isSupabaseConfigured) {
           console.warn('Supabase not configured – skipping auth init')
           setSession(null)
@@ -96,7 +123,7 @@ function App() {
               // The HomePage will handle this via its own effect
             })
 
-            notifChannel = subscribeToNotifications(profile.id, (notif) => {
+            notifChannel = subscribeToNotifications(profile.id, (notif: Notification) => {
               addNotification(notif)
             })
 
@@ -115,6 +142,11 @@ function App() {
     }
 
     initAuth()
+
+    // On localhost we skip the Supabase auth listener entirely
+    if (isLocalhost) {
+      return () => {}
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -156,7 +188,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LoginPage />} />
+        <Route path="/" element={isLocalhost ? <Navigate to="/home" replace /> : <LoginPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route
           path="/home"

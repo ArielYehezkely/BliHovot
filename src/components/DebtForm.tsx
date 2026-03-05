@@ -32,7 +32,7 @@ export function DebtForm({ isOpen, onClose, onSubmit, type, defaultCurrency = 'I
       return
     }
 
-    if (!description.trim()) {
+    if (!description.trim() && type === 'debt') {
       setError('Please add a description')
       return
     }
