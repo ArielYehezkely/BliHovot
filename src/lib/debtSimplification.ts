@@ -19,6 +19,13 @@ export interface DebtEdge {
   currency: string
 }
 
+export interface BalanceEdge {
+  user_id: string
+  other_user_id: string
+  currency: string
+  amount: number // negative = user owes other, positive = other owes user
+}
+
 export interface CircularDebtSuggestion {
   cycleUserIds: string[]
   currency: string
@@ -164,7 +171,113 @@ function getExistingRelationships(
 }
 
 /**
- * Main entry point: find circular debt simplification suggestions.
+ * Get the set of user-pairs that have a balance relationship.
+ */
+function getExistingRelationshipsFromBalances(
+  balances: BalanceEdge[],
+  userIds: string[]
+): Set<string> {
+  const rels = new Set<string>()
+  for (const bal of balances) {
+    if (userIds.includes(bal.user_id) && userIds.includes(bal.other_user_id)) {
+      rels.add(`${bal.user_id}:${bal.other_user_id}`)
+      rels.add(`${bal.other_user_id}:${bal.user_id}`)
+    }
+  }
+  return rels
+}
+
+/**
+ * Process discovered cycles into simplification suggestions.
+ * Shared by both transaction-based and balance-based entry points.
+ */
+function processCycles(
+  cycles: string[][],
+  netOwes: Map<string, Map<string, number>>,
+  relationships: Set<string>,
+  currency: string
+): CircularDebtSuggestion[] {
+  const suggestions: CircularDebtSuggestion[] = []
+
+  for (const cycle of cycles) {
+    // Collect current debts along the cycle edges
+    const currentDebts: DebtEdge[] = []
+    for (let i = 0; i < cycle.length; i++) {
+      const from = cycle[i]
+      const to = cycle[(i + 1) % cycle.length]
+      const amount = netOwes.get(from)?.get(to) ?? 0
+      if (amount > 0.01) {
+        currentDebts.push({ from, to, amount: Math.round(amount * 100) / 100, currency })
+      }
+    }
+
+    if (currentDebts.length < 3) continue
+
+    // Compute net position for each user within this cycle
+    const netPositions = new Map<string, number>()
+    for (const uid of cycle) netPositions.set(uid, 0)
+
+    for (const debt of currentDebts) {
+      netPositions.set(debt.from, (netPositions.get(debt.from) ?? 0) - debt.amount)
+      netPositions.set(debt.to, (netPositions.get(debt.to) ?? 0) + debt.amount)
+    }
+
+    // Split into debtors (net < 0) and creditors (net > 0)
+    const debtors: { id: string; amount: number }[] = []
+    const creditors: { id: string; amount: number }[] = []
+    for (const [uid, net] of netPositions) {
+      if (net < -0.01) debtors.push({ id: uid, amount: Math.abs(net) })
+      if (net > 0.01) creditors.push({ id: uid, amount: net })
+    }
+
+    // Propose simplified debts (only existing relationships)
+    const suggestedDebts: DebtEdge[] = []
+    let canSimplify = true
+
+    const d = debtors.map((x) => ({ ...x }))
+    const c = creditors.map((x) => ({ ...x }))
+
+    while (d.length > 0 && c.length > 0) {
+      const debtor = d[0]
+      const creditor = c[0]
+
+      if (!relationships.has(`${debtor.id}:${creditor.id}`)) {
+        canSimplify = false
+        break
+      }
+
+      const settleAmount = Math.min(debtor.amount, creditor.amount)
+      suggestedDebts.push({
+        from: debtor.id,
+        to: creditor.id,
+        amount: Math.round(settleAmount * 100) / 100,
+        currency,
+      })
+
+      debtor.amount -= settleAmount
+      creditor.amount -= settleAmount
+
+      if (debtor.amount < 0.01) d.shift()
+      if (creditor.amount < 0.01) c.shift()
+    }
+
+    if (!canSimplify) continue
+    if (suggestedDebts.length >= currentDebts.length) continue
+
+    suggestions.push({
+      cycleUserIds: cycle,
+      currency,
+      currentDebts,
+      suggestedDebts,
+      eliminatedDebts: currentDebts.length - suggestedDebts.length,
+    })
+  }
+
+  return suggestions
+}
+
+/**
+ * Main entry point (transaction-based): find circular debt simplification suggestions.
  *
  * Algorithm:
  *   1. For each currency, build a directed debt graph from transactions.
@@ -182,86 +295,60 @@ export function findCircularDebtSuggestions(
   const currencies = [...new Set(transactions.map((t) => t.currency))]
 
   for (const currency of currencies) {
-    // Stage 1: Build debt graph from transactions (only users with debts appear)
     const netOwes = buildDebtGraph(transactions, currency)
-
-    // Stage 2: Traverse from current user, find cycles back to them
     const cycles = findCyclesFromUser(netOwes, currentUserId)
+    const relationships = getExistingRelationships(transactions, [...netOwes.keys()])
+    suggestions.push(...processCycles(cycles, netOwes, relationships, currency))
+  }
 
-    for (const cycle of cycles) {
-      // Stage 3: Collect current debts along the cycle edges
-      const currentDebts: DebtEdge[] = []
-      for (let i = 0; i < cycle.length; i++) {
-        const from = cycle[i]
-        const to = cycle[(i + 1) % cycle.length]
-        const amount = netOwes.get(from)?.get(to) ?? 0
-        if (amount > 0.01) {
-          currentDebts.push({ from, to, amount: Math.round(amount * 100) / 100, currency })
-        }
-      }
+  return suggestions
+}
 
-      if (currentDebts.length < 3) continue
+/**
+ * Build a directed debt graph directly from materialized balance rows.
+ * netOwes[A][B] > 0 means A currently owes B that amount.
+ * The balances table already stores both directions so no normalization needed.
+ */
+function buildDebtGraphFromBalances(
+  balances: BalanceEdge[],
+  currency: string
+): Map<string, Map<string, number>> {
+  const netOwes = new Map<string, Map<string, number>>()
 
-      // Compute net position for each user within this cycle
-      const netPositions = new Map<string, number>()
-      for (const uid of cycle) netPositions.set(uid, 0)
+  for (const bal of balances) {
+    if (bal.currency !== currency) continue
 
-      for (const debt of currentDebts) {
-        netPositions.set(debt.from, (netPositions.get(debt.from) ?? 0) - debt.amount)
-        netPositions.set(debt.to, (netPositions.get(debt.to) ?? 0) + debt.amount)
-      }
+    if (!netOwes.has(bal.user_id)) netOwes.set(bal.user_id, new Map())
+    if (!netOwes.has(bal.other_user_id)) netOwes.set(bal.other_user_id, new Map())
 
-      // Split into debtors (net < 0) and creditors (net > 0)
-      const debtors: { id: string; amount: number }[] = []
-      const creditors: { id: string; amount: number }[] = []
-      for (const [uid, net] of netPositions) {
-        if (net < -0.01) debtors.push({ id: uid, amount: Math.abs(net) })
-        if (net > 0.01) creditors.push({ id: uid, amount: net })
-      }
-
-      // Stage 4: Propose simplified debts (only existing relationships)
-      const relationships = getExistingRelationships(transactions, cycle)
-      const suggestedDebts: DebtEdge[] = []
-      let canSimplify = true
-
-      const d = debtors.map((x) => ({ ...x }))
-      const c = creditors.map((x) => ({ ...x }))
-
-      while (d.length > 0 && c.length > 0) {
-        const debtor = d[0]
-        const creditor = c[0]
-
-        if (!relationships.has(`${debtor.id}:${creditor.id}`)) {
-          canSimplify = false
-          break
-        }
-
-        const settleAmount = Math.min(debtor.amount, creditor.amount)
-        suggestedDebts.push({
-          from: debtor.id,
-          to: creditor.id,
-          amount: Math.round(settleAmount * 100) / 100,
-          currency,
-        })
-
-        debtor.amount -= settleAmount
-        creditor.amount -= settleAmount
-
-        if (debtor.amount < 0.01) d.shift()
-        if (creditor.amount < 0.01) c.shift()
-      }
-
-      if (!canSimplify) continue
-      if (suggestedDebts.length >= currentDebts.length) continue
-
-      suggestions.push({
-        cycleUserIds: cycle,
-        currency,
-        currentDebts,
-        suggestedDebts,
-        eliminatedDebts: currentDebts.length - suggestedDebts.length,
-      })
+    // Negative amount = user owes other
+    if (bal.amount < -0.01) {
+      netOwes.get(bal.user_id)!.set(bal.other_user_id, Math.abs(bal.amount))
     }
+  }
+
+  return netOwes
+}
+
+/**
+ * Balance-based entry point: find circular debt suggestions using the
+ * materialized balances table instead of scanning all transactions.
+ *
+ * The balances table already stores the net debt between each user pair,
+ * so we skip the expensive transaction aggregation step entirely.
+ */
+export function findCircularDebtsFromBalances(
+  balances: BalanceEdge[],
+  currentUserId: string
+): CircularDebtSuggestion[] {
+  const suggestions: CircularDebtSuggestion[] = []
+  const currencies = [...new Set(balances.map((b) => b.currency))]
+
+  for (const currency of currencies) {
+    const netOwes = buildDebtGraphFromBalances(balances, currency)
+    const cycles = findCyclesFromUser(netOwes, currentUserId)
+    const relationships = getExistingRelationshipsFromBalances(balances, [...netOwes.keys()])
+    suggestions.push(...processCycles(cycles, netOwes, relationships, currency))
   }
 
   return suggestions

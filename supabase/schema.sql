@@ -30,7 +30,18 @@ CREATE TABLE IF NOT EXISTS transactions (
   CONSTRAINT different_parties CHECK (debtor_id != creditor_id)
 );
 
--- 3. Notifications table
+-- 3. Balances table (materialized net balances, updated by trigger)
+CREATE TABLE IF NOT EXISTS balances (
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  other_user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  currency TEXT NOT NULL DEFAULT 'ILS',
+  amount NUMERIC NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, other_user_id, currency),
+  CONSTRAINT different_balance_parties CHECK (user_id != other_user_id)
+);
+
+-- 4. Notifications table
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -47,6 +58,8 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_transactions_debtor ON transactions(debtor_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_creditor ON transactions(creditor_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_balances_user ON balances(user_id);
+CREATE INDEX IF NOT EXISTS idx_balances_other ON balances(other_user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id) WHERE read = FALSE;
 CREATE INDEX IF NOT EXISTS idx_profiles_phone ON profiles(phone_number);
@@ -57,6 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_phone ON profiles(phone_number);
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE balances ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: anyone can read, only own profile can be updated
@@ -101,6 +115,12 @@ CREATE POLICY "Users can create valid transactions"
 
 -- Transactions: No UPDATE or DELETE (append-only)
 -- (No policies created for UPDATE/DELETE means they're blocked by default with RLS enabled)
+
+-- Balances: users can read their own rows, trigger handles writes
+CREATE POLICY "Users can view their own balances"
+  ON balances FOR SELECT
+  TO authenticated
+  USING (auth.uid() = user_id);
 
 -- Notifications: users can only see their own
 CREATE POLICY "Users can view their own notifications"
@@ -168,6 +188,64 @@ CREATE TRIGGER on_transaction_insert
   AFTER INSERT ON transactions
   FOR EACH ROW
   EXECUTE FUNCTION notify_on_transaction();
+
+-- ============================================
+-- Trigger: update balances table on transaction insert
+-- ============================================
+
+CREATE OR REPLACE FUNCTION update_balances_on_transaction()
+RETURNS TRIGGER AS $$
+DECLARE
+  delta NUMERIC;
+BEGIN
+  -- For debt: debtor owes creditor → negative for debtor, positive for creditor
+  -- For payment: reduces debt → positive for debtor, negative for creditor
+  IF NEW.type = 'debt' THEN
+    delta := NEW.amount;
+  ELSE
+    delta := -NEW.amount;
+  END IF;
+
+  -- Update debtor's view: debtor → creditor (negative = user owes other)
+  INSERT INTO balances (user_id, other_user_id, currency, amount, updated_at)
+  VALUES (NEW.debtor_id, NEW.creditor_id, NEW.currency, -delta, NOW())
+  ON CONFLICT (user_id, other_user_id, currency)
+  DO UPDATE SET amount = balances.amount - delta, updated_at = NOW();
+
+  -- Update creditor's view: creditor → debtor (positive = other owes user)
+  INSERT INTO balances (user_id, other_user_id, currency, amount, updated_at)
+  VALUES (NEW.creditor_id, NEW.debtor_id, NEW.currency, delta, NOW())
+  ON CONFLICT (user_id, other_user_id, currency)
+  DO UPDATE SET amount = balances.amount + delta, updated_at = NOW();
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_transaction_update_balances
+  AFTER INSERT ON transactions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_balances_on_transaction();
+
+-- ============================================
+-- RPC: get group balances for cycle detection
+-- ============================================
+
+CREATE OR REPLACE FUNCTION get_group_balances(p_user_ids UUID[])
+RETURNS TABLE (
+  user_id UUID,
+  other_user_id UUID,
+  currency TEXT,
+  amount NUMERIC
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT b.user_id, b.other_user_id, b.currency, b.amount
+  FROM balances b
+  WHERE b.user_id = ANY(p_user_ids)
+    AND b.other_user_id = ANY(p_user_ids);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================
 -- Enable Realtime

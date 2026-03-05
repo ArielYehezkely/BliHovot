@@ -2,20 +2,22 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ArrowRight, TrendingDown, TrendingUp, Plus, Minus } from 'lucide-react'
+import { ArrowLeft, ArrowRight, TrendingDown, TrendingUp, Plus, Minus, ChevronDown } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import {
   getTransactionsBetween,
   getProfile,
   addDebt,
   markPayment,
-  calculateNetBalance,
+  getBalanceWith,
 } from '../lib/api'
 import type { Transaction, Profile } from '../types'
 import { getCurrencySymbol } from '../types'
 import { Avatar } from '../components/Avatar'
 import { BalanceBadge } from '../components/BalanceBadge'
 import { DebtForm } from '../components/DebtForm'
+
+const PAGE_SIZE = 5
 
 export function UserDetailPage() {
   const { id: otherUserId } = useParams<{ id: string }>()
@@ -25,6 +27,9 @@ export function UserDetailPage() {
 
   const [otherUser, setOtherUser] = useState<Profile | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [hasMore, setHasMore] = useState(false)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [netBalances, setNetBalances] = useState<{ currency: string; amount: number }[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showDebtForm, setShowDebtForm] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
@@ -36,18 +41,40 @@ export function UserDetailPage() {
     if (!profile?.id || !otherUserId) return
     setIsLoading(true)
     try {
-      const [user, txs] = await Promise.all([
+      const [user, txResult, balances] = await Promise.all([
         getProfile(otherUserId),
-        getTransactionsBetween(profile.id, otherUserId),
+        getTransactionsBetween(profile.id, otherUserId, PAGE_SIZE, 0),
+        getBalanceWith(profile.id, otherUserId),
       ])
       setOtherUser(user)
-      setTransactions(txs)
+      setTransactions(txResult.transactions)
+      setHasMore(txResult.hasMore)
+      setNetBalances(balances)
     } catch (err) {
       console.error('Failed to load user data:', err)
     } finally {
       setIsLoading(false)
     }
   }, [profile?.id, otherUserId])
+
+  const loadMore = useCallback(async () => {
+    if (!profile?.id || !otherUserId || isLoadingMore) return
+    setIsLoadingMore(true)
+    try {
+      const txResult = await getTransactionsBetween(
+        profile.id,
+        otherUserId,
+        PAGE_SIZE,
+        transactions.length
+      )
+      setTransactions((prev) => [...prev, ...txResult.transactions])
+      setHasMore(txResult.hasMore)
+    } catch (err) {
+      console.error('Failed to load more transactions:', err)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [profile?.id, otherUserId, transactions.length, isLoadingMore])
 
   useEffect(() => {
     loadData()
@@ -59,10 +86,6 @@ export function UserDetailPage() {
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
   }, [loadData])
-
-  const netBalances = profile?.id && otherUserId
-    ? calculateNetBalance(transactions, profile.id, otherUserId)
-    : []
 
   const hasPositiveBalance = netBalances.some((b) => b.amount > 0)
 
@@ -232,6 +255,26 @@ export function UserDetailPage() {
               ))}
             </div>
           </AnimatePresence>
+        )}
+
+        {/* Load more button */}
+        {hasMore && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={loadMore}
+            disabled={isLoadingMore}
+            className="w-full mt-3 py-2.5 flex items-center justify-center gap-1.5 text-sm font-medium text-lavender-dark hover:text-lavender transition-colors rounded-2xl bg-lavender/5 hover:bg-lavender/10 disabled:opacity-50"
+          >
+            {isLoadingMore ? (
+              <div className="w-4 h-4 rounded-full border-2 border-lavender border-t-transparent animate-spin" />
+            ) : (
+              <>
+                <ChevronDown size={16} />
+                <span>{t('userDetail.loadMore')}</span>
+              </>
+            )}
+          </motion.button>
         )}
       </div>
 

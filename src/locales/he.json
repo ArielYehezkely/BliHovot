@@ -67,7 +67,8 @@
     "theyOweYou": "הם חייבים לך",
     "settled": "הכל מסודר! ✓",
     "debtAdded": "הוסיף/ה חוב",
-    "paymentMarked": "סימן/ה תשלום"
+    "paymentMarked": "סימן/ה תשלום",
+    "loadMore": "טען עוד"
   },
   "debtForm": {
     "title": "הוספת חוב",

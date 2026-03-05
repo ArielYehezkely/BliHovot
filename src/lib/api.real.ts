@@ -171,92 +171,76 @@ export async function markPayment(
 
 export async function getTransactionsBetween(
   userId: string,
-  otherUserId: string
-): Promise<Transaction[]> {
-  const { data, error } = await supabase
+  otherUserId: string,
+  limit = 5,
+  offset = 0
+): Promise<{ transactions: Transaction[]; hasMore: boolean }> {
+  const { data, error, count } = await supabase
     .from('transactions')
-    .select('*')
+    .select('*', { count: 'exact' })
     .or(
       `and(debtor_id.eq.${userId},creditor_id.eq.${otherUserId}),and(debtor_id.eq.${otherUserId},creditor_id.eq.${userId})`
     )
     .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
 
   if (error) throw error
-  return data ?? []
+  return {
+    transactions: data ?? [],
+    hasMore: (count ?? 0) > offset + limit,
+  }
 }
 
 // ============ NET BALANCES & CONTACTS ============
 
 export async function getContactsWithBalances(userId: string): Promise<ContactUser[]> {
-  // Get all transactions involving the user
-  const { data: transactions, error } = await supabase
-    .from('transactions')
-    .select('*, debtor:profiles!debtor_id(*), creditor:profiles!creditor_id(*)')
-    .or(`debtor_id.eq.${userId},creditor_id.eq.${userId}`)
+  // Read from the materialized balances table instead of summing all transactions
+  const { data: rows, error } = await supabase
+    .from('balances')
+    .select('other_user_id, currency, amount')
+    .eq('user_id', userId)
 
   if (error) throw error
-  if (!transactions || transactions.length === 0) return []
+  if (!rows || rows.length === 0) return []
 
-  // Build a map of other users -> balance per currency
-  const balanceMap = new Map<string, {
-    profile: Profile
-    balances: Map<string, number>
-  }>()
+  // Group by other_user_id
+  const otherIds = [...new Set(rows.map((r) => r.other_user_id))]
 
-  for (const tx of transactions) {
-    const otherId = tx.debtor_id === userId ? tx.creditor_id : tx.debtor_id
-    const otherProfile = tx.debtor_id === userId ? tx.creditor : tx.debtor
+  // Fetch profiles for all other users in one query
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('id', otherIds)
 
-    if (!balanceMap.has(otherId)) {
-      balanceMap.set(otherId, {
-        profile: otherProfile,
-        balances: new Map(),
+  if (profilesError) throw profilesError
+
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]))
+
+  // Build contact list
+  const contactMap = new Map<string, ContactUser>()
+  for (const row of rows) {
+    if (Math.abs(row.amount) < 0.01) continue
+    const p = profileMap.get(row.other_user_id)
+    if (!p) continue
+
+    if (!contactMap.has(row.other_user_id)) {
+      contactMap.set(row.other_user_id, {
+        id: row.other_user_id,
+        display_name: p.display_name,
+        avatar_url: p.avatar_url,
+        phone_number: p.phone_number,
+        net_balances: [],
       })
     }
-
-    const entry = balanceMap.get(otherId)!
-    const currentBalance = entry.balances.get(tx.currency) ?? 0
-
-    if (tx.type === 'debt') {
-      // debt: debtor owes creditor
-      if (tx.debtor_id === userId) {
-        // user owes other → negative
-        entry.balances.set(tx.currency, currentBalance - tx.amount)
-      } else {
-        // other owes user → positive
-        entry.balances.set(tx.currency, currentBalance + tx.amount)
-      }
-    } else {
-      // payment: reduces debt, reverse the effect
-      if (tx.debtor_id === userId) {
-        // payment on user's debt to other → positive (reduces what user owes)
-        entry.balances.set(tx.currency, currentBalance + tx.amount)
-      } else {
-        // payment on other's debt to user → negative (reduces what other owes)
-        entry.balances.set(tx.currency, currentBalance - tx.amount)
-      }
-    }
-  }
-
-  // Convert map to contact list
-  const contacts: ContactUser[] = []
-  for (const [id, entry] of balanceMap) {
-    const net_balances = Array.from(entry.balances.entries())
-      .map(([currency, amount]) => ({ currency, amount }))
-      .filter(b => Math.abs(b.amount) > 0.01) // filter out near-zero
-
-    contacts.push({
-      id,
-      display_name: entry.profile.display_name,
-      avatar_url: entry.profile.avatar_url,
-      phone_number: entry.profile.phone_number,
-      net_balances,
+    contactMap.get(row.other_user_id)!.net_balances.push({
+      currency: row.currency,
+      amount: row.amount,
     })
   }
 
-  return contacts.sort((a, b) => {
-    const aMax = Math.max(...a.net_balances.map(b => Math.abs(b.amount)), 0)
-    const bMax = Math.max(...b.net_balances.map(b => Math.abs(b.amount)), 0)
+  return [...contactMap.values()].sort((a, b) => {
+    const aMax = Math.max(...a.net_balances.map((bl) => Math.abs(bl.amount)), 0)
+    const bMax = Math.max(...b.net_balances.map((bl) => Math.abs(bl.amount)), 0)
     return bMax - aMax
   })
 }
@@ -288,6 +272,26 @@ export function calculateNetBalance(
   return Array.from(balances.entries())
     .map(([currency, amount]) => ({ currency, amount }))
     .filter(b => Math.abs(b.amount) > 0.01)
+}
+
+/**
+ * Get the net balance between two users from the materialized balances table.
+ * Returns the balance from userId's perspective.
+ */
+export async function getBalanceWith(
+  userId: string,
+  otherUserId: string
+): Promise<{ currency: string; amount: number }[]> {
+  const { data, error } = await supabase
+    .from('balances')
+    .select('currency, amount')
+    .eq('user_id', userId)
+    .eq('other_user_id', otherUserId)
+
+  if (error) throw error
+  return (data ?? [])
+    .map((r) => ({ currency: r.currency, amount: Number(r.amount) }))
+    .filter((b) => Math.abs(b.amount) > 0.01)
 }
 
 // ============ NOTIFICATIONS ============
@@ -336,6 +340,24 @@ export async function getGroupTransactions(userIds: string[]): Promise<Transacti
 
   if (error) throw error
   return data ?? []
+}
+
+// ============ GROUP BALANCES (for debt simplification via balances table) ============
+
+export async function getGroupBalances(
+  userIds: string[]
+): Promise<{ user_id: string; other_user_id: string; currency: string; amount: number }[]> {
+  const { data, error } = await supabase.rpc('get_group_balances', {
+    p_user_ids: userIds,
+  })
+
+  if (error) throw error
+  return (data ?? []).map((r: { user_id: string; other_user_id: string; currency: string; amount: number }) => ({
+    user_id: r.user_id,
+    other_user_id: r.other_user_id,
+    currency: r.currency,
+    amount: Number(r.amount),
+  }))
 }
 
 // ============ DEBT SIMPLIFICATION NOTIFICATIONS ============

@@ -67,7 +67,8 @@
     "theyOweYou": "They owe you",
     "settled": "You're all settled! ✓",
     "debtAdded": "added a debt",
-    "paymentMarked": "marked a payment"
+    "paymentMarked": "marked a payment",
+    "loadMore": "Load more"
   },
   "debtForm": {
     "title": "Add Debt",

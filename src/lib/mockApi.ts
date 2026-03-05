@@ -165,15 +165,22 @@ export async function markPayment(
 
 export async function getTransactionsBetween(
   userId: string,
-  otherUserId: string
-): Promise<Transaction[]> {
-  return mockDb.transactions
+  otherUserId: string,
+  limit = 5,
+  offset = 0
+): Promise<{ transactions: Transaction[]; hasMore: boolean }> {
+  const all = mockDb.transactions
     .filter(
       (t) =>
         (t.debtor_id === userId && t.creditor_id === otherUserId) ||
         (t.debtor_id === otherUserId && t.creditor_id === userId)
     )
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+  return {
+    transactions: all.slice(offset, offset + limit),
+    hasMore: all.length > offset + limit,
+  }
 }
 
 // ============ NET BALANCES & CONTACTS ============
@@ -266,6 +273,22 @@ export function calculateNetBalance(
     .filter((b) => Math.abs(b.amount) > 0.01)
 }
 
+/**
+ * Get the net balance between two users by computing from all transactions.
+ * Mock equivalent of the real API's materialized balances read.
+ */
+export async function getBalanceWith(
+  userId: string,
+  otherUserId: string
+): Promise<{ currency: string; amount: number }[]> {
+  const allTxs = mockDb.transactions.filter(
+    (t) =>
+      (t.debtor_id === userId && t.creditor_id === otherUserId) ||
+      (t.debtor_id === otherUserId && t.creditor_id === userId)
+  )
+  return calculateNetBalance(allTxs, userId, otherUserId)
+}
+
 // ============ NOTIFICATIONS ============
 
 export async function getNotifications(userId: string): Promise<Notification[]> {
@@ -292,6 +315,34 @@ export async function getGroupTransactions(userIds: string[]): Promise<Transacti
   return mockDb.transactions
     .filter((t) => userIds.includes(t.debtor_id) && userIds.includes(t.creditor_id))
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+// ============ GROUP BALANCES (for debt simplification via balances table) ============
+
+export async function getGroupBalances(
+  userIds: string[]
+): Promise<{ user_id: string; other_user_id: string; currency: string; amount: number }[]> {
+  // Compute net balances between all users in the group from transactions
+  const txs = mockDb.transactions.filter(
+    (t) => userIds.includes(t.debtor_id) && userIds.includes(t.creditor_id)
+  )
+
+  const balMap = new Map<string, number>()
+  for (const tx of txs) {
+    const debtorKey = `${tx.debtor_id}:${tx.creditor_id}:${tx.currency}`
+    const creditorKey = `${tx.creditor_id}:${tx.debtor_id}:${tx.currency}`
+    const delta = tx.type === 'debt' ? tx.amount : -tx.amount
+    balMap.set(debtorKey, (balMap.get(debtorKey) ?? 0) - delta)
+    balMap.set(creditorKey, (balMap.get(creditorKey) ?? 0) + delta)
+  }
+
+  const results: { user_id: string; other_user_id: string; currency: string; amount: number }[] = []
+  for (const [key, amount] of balMap) {
+    if (Math.abs(amount) < 0.01) continue
+    const [userId, otherUserId, currency] = key.split(':')
+    results.push({ user_id: userId, other_user_id: otherUserId, currency, amount })
+  }
+  return results
 }
 
 // ============ DEBT SIMPLIFICATION NOTIFICATIONS ============

@@ -4,8 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Lightbulb, ArrowRight, Check, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { useContactsStore } from '../stores/contactsStore'
-import { getContactsWithBalances, getGroupTransactions, markPayment, addDebt, notifyDebtSimplification } from '../lib/api'
-import { findCircularDebtSuggestions, type CircularDebtSuggestion, type DebtEdge } from '../lib/debtSimplification'
+import { getContactsWithBalances, getGroupBalances, markPayment, addDebt, notifyDebtSimplification } from '../lib/api'
+import { findCircularDebtsFromBalances, type CircularDebtSuggestion, type DebtEdge } from '../lib/debtSimplification'
 import { getCurrencySymbol } from '../types'
 import { Avatar } from '../components/Avatar'
 import { BottomNav } from '../components/BottomNav'
@@ -32,11 +32,11 @@ export function AdvancedPage() {
       // 2. Build user ID list (current user + all contacts)
       const allUserIds = [profile.id, ...contactList.map((c) => c.id)]
 
-      // 3. Get all transactions between these users
-      const transactions = await getGroupTransactions(allUserIds)
+      // 3. Get pre-computed balances between these users (no full history scan)
+      const balances = await getGroupBalances(allUserIds)
 
-      // 4. Run circular debt detection
-      const results = findCircularDebtSuggestions(transactions, allUserIds, profile.id)
+      // 4. Run circular debt detection from balances
+      const results = findCircularDebtsFromBalances(balances, profile.id)
       setSuggestions(results)
 
       // 5. Build profile lookup for display names
