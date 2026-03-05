@@ -22,6 +22,7 @@ export const getProfile = impl.getProfile
 export const createProfile = impl.createProfile
 export const updateProfile = impl.updateProfile
 export const findProfileByPhone = impl.findProfileByPhone
+export const findOrCreateByPhone = impl.findOrCreateByPhone
 
 // ── Transactions ──
 export const addDebt = impl.addDebt

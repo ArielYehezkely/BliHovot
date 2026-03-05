@@ -53,6 +53,9 @@
     "pickContact": "Pick from contacts",
     "enterPhone": "Enter phone number",
     "notOnApp": "This person isn't on BliHovot yet",
+    "addNewContact": "Add as new contact",
+    "contactName": "Contact name",
+    "contactNamePlaceholder": "Enter their name",
     "selectContact": "Select a contact"
   },
   "userDetail": {

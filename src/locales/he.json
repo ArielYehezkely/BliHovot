@@ -53,6 +53,9 @@
     "pickContact": "בחירה מאנשי הקשר",
     "enterPhone": "הזנת מספר טלפון",
     "notOnApp": "האדם הזה עדיין לא באפליקציה",
+    "addNewContact": "הוספה כאיש קשר חדש",
+    "contactName": "שם איש הקשר",
+    "contactNamePlaceholder": "הזן/י את השם",
     "selectContact": "בחירת איש קשר"
   },
   "userDetail": {

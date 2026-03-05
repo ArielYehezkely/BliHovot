@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { normalizePhone } from './phoneUtils'
 import type { Profile, Transaction, Notification, ContactUser } from '../types'
 
 // ============ AUTH ============
@@ -78,13 +79,39 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
 }
 
 export async function findProfileByPhone(phone: string): Promise<Profile | null> {
+  const normalized = normalizePhone(phone)
+  // Try E.164 format first, then also try local format
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('phone_number', phone)
+    .eq('phone_number', normalized)
     .single()
 
   if (error && error.code !== 'PGRST116') throw error
+  return data
+}
+
+export async function findOrCreateByPhone(
+  phone: string,
+  displayName: string
+): Promise<Profile> {
+  const normalized = normalizePhone(phone)
+  const existing = await findProfileByPhone(normalized)
+  if (existing) return existing
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert({
+      id: crypto.randomUUID(),
+      phone_number: normalized,
+      display_name: displayName,
+      language: 'en',
+      preferred_currency: 'ILS',
+    })
+    .select()
+    .single()
+
+  if (error) throw error
   return data
 }
 

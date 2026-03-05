@@ -3,6 +3,7 @@
  * Uses an in-memory store so the app runs fully offline on localhost.
  */
 import { mockDb } from './mockData'
+import { normalizePhone } from './phoneUtils'
 import type { Profile, Transaction, Notification, ContactUser } from '../types'
 
 // ============ AUTH (no-ops on localhost) ============
@@ -48,7 +49,30 @@ export async function updateProfile(userId: string, updates: Partial<Profile>): 
 }
 
 export async function findProfileByPhone(phone: string): Promise<Profile | null> {
-  return mockDb.profiles.find((p) => p.phone_number === phone) ?? null
+  const normalized = normalizePhone(phone)
+  return mockDb.profiles.find((p) => normalizePhone(p.phone_number) === normalized) ?? null
+}
+
+export async function findOrCreateByPhone(
+  phone: string,
+  displayName: string
+): Promise<Profile> {
+  const normalized = normalizePhone(phone)
+  const existing = mockDb.profiles.find((p) => normalizePhone(p.phone_number) === normalized)
+  if (existing) return existing
+
+  const newProfile: Profile = {
+    id: `placeholder-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    phone_number: normalized,
+    display_name: displayName,
+    avatar_url: null,
+    language: 'en',
+    preferred_currency: 'ILS',
+    push_subscription: null,
+    created_at: new Date().toISOString(),
+  }
+  mockDb.profiles.push(newProfile)
+  return newProfile
 }
 
 // ============ TRANSACTIONS ============
