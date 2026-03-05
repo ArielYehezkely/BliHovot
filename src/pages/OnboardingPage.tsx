@@ -43,7 +43,7 @@ export function OnboardingPage() {
     setError('')
     setIsLoading(true)
     try {
-      const profile = await createProfile({
+      const profileData = {
         id: session.user.id,
         phone_number: formattedPhone,
         display_name: displayName.trim() || 'User',
@@ -51,7 +51,9 @@ export function OnboardingPage() {
         language: i18n.language as 'he' | 'en',
         preferred_currency: currency,
         push_subscription: null,
-      })
+      }
+
+      const profile = await createProfile(profileData)
       setProfile(profile)
       navigate('/home')
     } catch (err) {
@@ -63,19 +65,19 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-mint/5 via-background to-lavender/5 p-20">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-mint/5 via-background to-lavender/5 p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm flex flex-col items-center gap-10 bg-white/80 backdrop-blur-sm rounded-3xl p-20 shadow-lg"
+        className="w-full max-w-sm flex flex-col items-stretch gap-6 bg-white/80 backdrop-blur-sm rounded-3xl px-8 py-10 shadow-lg"
       >
-        <div className="text-center mb-10">
+        <div className="text-center">
           <h1 className="text-3xl font-bold">{t('onboarding.title')}</h1>
           <p className="text-text-secondary mt-2 text-base">{t('onboarding.subtitle')}</p>
         </div>
 
         {/* Step indicator */}
-        <div className="flex justify-center gap-3 mb-10">
+        <div className="flex justify-center gap-3">
           {(['phone', 'profile'] as Step[]).map((s, i) => (
             <div
               key={s}
@@ -91,7 +93,7 @@ export function OnboardingPage() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="space-y-6 gap-10 flex flex-col items-center p-5"
+            className="flex flex-col gap-5"
           >
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
@@ -111,7 +113,7 @@ export function OnboardingPage() {
             <button
               onClick={handlePhoneSubmit}
               disabled={!phone}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-coral to-coral-light text-white font-semibold text-lg shadow-lg shadow-coral/25 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="self-center px-12 py-4 rounded-2xl bg-gradient-to-r from-coral to-coral-light text-white font-semibold text-lg shadow-lg shadow-coral/25 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {t('common.next') || 'Next'}
             </button>
@@ -123,7 +125,7 @@ export function OnboardingPage() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="space-y-6 gap-10 flex flex-col items-center p-5"
+            className="flex flex-col gap-5"
           >
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
@@ -156,7 +158,7 @@ export function OnboardingPage() {
             <button
               onClick={handleComplete}
               disabled={isLoading || !displayName.trim()}
-              className="py-4 rounded-2xl bg-gradient-to-r from-mint to-mint-light text-white font-semibold text-lg shadow-lg shadow-mint/25 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="self-center px-12 py-4 rounded-2xl bg-gradient-to-r from-mint to-mint-light text-white font-semibold text-lg shadow-lg shadow-mint/25 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {isLoading ? t('common.loading') : t('onboarding.completeButton')}
             </button>

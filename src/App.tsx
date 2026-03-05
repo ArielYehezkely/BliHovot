@@ -119,9 +119,14 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session)
-        if (session?.user?.id) {
-          const profile = await getProfile(session.user.id)
-          setProfile(profile)
+        if (session?.user?.id && isSupabaseConfigured) {
+          try {
+            const profile = await getProfile(session.user.id)
+            setProfile(profile)
+          } catch (err) {
+            console.error('Failed to fetch profile on auth change:', err)
+            setProfile(null)
+          }
         } else {
           setProfile(null)
         }

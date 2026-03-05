@@ -21,25 +21,25 @@
     "signOut": "התנתקות"
   },
   "onboarding": {
-    "title": "!ברוכים הבאים 🎉",
+    "title": "ברוכים הבאים! 🎉",
     "subtitle": "בואו נגדיר את הפרופיל שלכם",
     "phoneLabel": "מספר טלפון",
     "phonePlaceholder": "050-123-4567",
-    "phoneHint": "מספר הטלפון שלך הוא הדרך שחברים ימצאו אותך באפליקציה",
+    "phoneHint": "מספר הטלפון שלך הוא הדרך שבה חברים ימצאו אותך באפליקציה",
     "verifyButton": "שלח קוד אימות",
     "codeLabel": "קוד אימות",
     "codePlaceholder": "123456",
     "verifyCodeButton": "אמת",
     "nameLabel": "שם תצוגה",
     "currencyLabel": "מטבע ברירת מחדל",
-    "completeButton": "!יאללה 🚀"
+    "completeButton": "יאללה! 🚀"
   },
   "home": {
     "greeting": "היי, {{name}}!",
     "summary": "סיכום היתרות שלך",
     "youOwe": "אתה חייב",
     "owedToYou": "חייבים לך",
-    "allSettled": "!הכל מסודר 🎉",
+    "allSettled": "הכל מסודר! 🎉",
     "allSettledDesc": "אין לך חובות פתוחים",
     "addDebt": "הוספת חוב",
     "totalBalance": "יתרה כוללת"
@@ -62,7 +62,7 @@
     "noHistory": "אין עסקאות עדיין",
     "youOweThem": "אתה חייב להם",
     "theyOweYou": "הם חייבים לך",
-    "settled": "!הכל מסודר ✓",
+    "settled": "הכל מסודר! ✓",
     "debtAdded": "הוסיף/ה חוב",
     "paymentMarked": "סימן/ה תשלום"
   },

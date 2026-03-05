@@ -21,28 +21,30 @@
   --font-family-rubik: 'Rubik', sans-serif;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-html {
-  font-family: var(--font-family-rubik);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+  html {
+    font-family: var(--font-family-rubik);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-body {
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
-  min-height: 100dvh;
-}
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    min-height: 100dvh;
+  }
 
-#root {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 /* RTL support */

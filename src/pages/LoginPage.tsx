@@ -1,37 +1,10 @@
-import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { signInWithGoogle, signInWithMicrosoft } from '../lib/api'
-import { useAuthStore } from '../stores/authStore'
 import { LanguageToggle } from '../components/LanguageToggle'
-
-const IS_DEV = import.meta.env.DEV
 
 export function LoginPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
-  const setSession = useAuthStore((s) => s.setSession)
-  const setLoading = useAuthStore((s) => s.setLoading)
-
-  const handleDevLogin = () => {
-    const fakeSession = {
-      access_token: 'dev-token',
-      refresh_token: 'dev-refresh',
-      expires_in: 999999,
-      token_type: 'bearer',
-      user: {
-        id: 'dev-user-00000000-0000-0000-0000-000000000000',
-        email: 'dev@localhost',
-        app_metadata: {},
-        user_metadata: { full_name: 'Dev User' },
-        aud: 'authenticated',
-        created_at: new Date().toISOString(),
-      },
-    } as any
-    setLoading(false)
-    setSession(fakeSession)
-    navigate('/onboarding')
-  }
 
   const handleGoogle = async () => {
     try {
@@ -126,18 +99,6 @@ export function LoginPage() {
           Track debts • Stay fair • Keep it fun ✌️
         </motion.p>
 
-        {/* Dev skip login */}
-        {IS_DEV && (
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1 }}
-            onClick={handleDevLogin}
-            className="mt-4 px-4 py-2 rounded-xl border-2 border-dashed border-gray-300 text-text-muted text-sm hover:border-coral hover:text-coral transition-colors"
-          >
-            🛠️ Skip Login (Dev)
-          </motion.button>
-        )}
       </motion.div>
     </div>
   )

@@ -30,3 +30,6 @@ dist-ssr
 
 # PWA generated
 dev-dist
+
+.vercel
+.env*.local
