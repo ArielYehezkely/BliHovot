@@ -323,6 +323,55 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
   if (error) throw error
 }
 
+// ============ GROUP TRANSACTIONS (for debt simplification) ============
+
+export async function getGroupTransactions(userIds: string[]): Promise<Transaction[]> {
+  // Fetch all transactions where both debtor and creditor are in the group
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .in('debtor_id', userIds)
+    .in('creditor_id', userIds)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data ?? []
+}
+
+// ============ DEBT SIMPLIFICATION NOTIFICATIONS ============
+
+export async function notifyDebtSimplification(
+  initiatorId: string,
+  initiatorName: string,
+  cycleUserIds: string[],
+  currency: string,
+  debtsEliminated: number
+): Promise<void> {
+  const now = new Date().toISOString()
+  const notifications = cycleUserIds
+    .filter((uid) => uid !== initiatorId)
+    .map((userId) => ({
+      user_id: userId,
+      type: 'debt_simplified' as const,
+      data: {
+        amount: 0,
+        currency,
+        from_user_id: initiatorId,
+        from_user_name: initiatorName,
+        description: 'Circular Debt Simplification',
+        involved_users: cycleUserIds,
+        debts_eliminated: debtsEliminated,
+      },
+      read: false,
+      created_at: now,
+    }))
+
+  if (notifications.length === 0) return
+
+  const { error } = await supabase.from('notifications').insert(notifications)
+  if (error) throw error
+}
+
 // ============ REALTIME ============
 
 export function subscribeToTransactions(

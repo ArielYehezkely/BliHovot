@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Home, Settings, Bell } from 'lucide-react'
+import { Home, Settings, Bell, Lightbulb } from 'lucide-react'
 import { useNotificationStore } from '../stores/notificationStore'
 
 export function BottomNav() {
@@ -11,6 +11,7 @@ export function BottomNav() {
 
   const tabs = [
     { path: '/home', icon: Home, label: t('home.totalBalance') },
+    { path: '/advanced', icon: Lightbulb, label: t('advanced.title') },
     { path: '/notifications', icon: Bell, label: t('notifications.title'), badge: unreadCount },
     { path: '/settings', icon: Settings, label: t('settings.title') },
   ]

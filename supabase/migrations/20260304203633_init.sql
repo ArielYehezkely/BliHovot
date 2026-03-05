@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('debt_added', 'debt_reduced')),
+  type TEXT NOT NULL CHECK (type IN ('debt_added', 'debt_reduced', 'debt_simplified')),
   data JSONB NOT NULL DEFAULT '{}',
   read BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

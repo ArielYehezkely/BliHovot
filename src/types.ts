@@ -29,13 +29,16 @@ export interface TransactionWithProfiles extends Transaction {
 export interface Notification {
   id: string
   user_id: string
-  type: 'debt_added' | 'debt_reduced'
+  type: 'debt_added' | 'debt_reduced' | 'debt_simplified'
   data: {
     amount: number
     currency: string
     from_user_id: string
     from_user_name: string
     description?: string
+    /** debt_simplified specific fields */
+    involved_users?: string[]
+    debts_eliminated?: number
   }
   read: boolean
   created_at: string

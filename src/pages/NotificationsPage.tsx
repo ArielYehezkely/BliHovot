@@ -108,10 +108,12 @@ export function NotificationsPage() {
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                      notif.type === 'debt_added' ? 'bg-coral/10' : 'bg-mint/10'
+                      notif.type === 'debt_added' ? 'bg-coral/10' : notif.type === 'debt_simplified' ? 'bg-purple-100' : 'bg-mint/10'
                     }`}>
                       {notif.type === 'debt_added' ? (
                         <span className="text-sm">💸</span>
+                      ) : notif.type === 'debt_simplified' ? (
+                        <span className="text-sm">🔄</span>
                       ) : (
                         <span className="text-sm">✅</span>
                       )}
@@ -123,6 +125,11 @@ export function NotificationsPage() {
                               name: notif.data.from_user_name,
                               amount: notif.data.amount.toFixed(2),
                               currency: getCurrencySymbol(notif.data.currency),
+                            })
+                          : notif.type === 'debt_simplified'
+                          ? t('notifications.debtSimplified', {
+                              name: notif.data.from_user_name,
+                              count: notif.data.debts_eliminated ?? 0,
                             })
                           : t('notifications.debtReduced', {
                               name: notif.data.from_user_name,

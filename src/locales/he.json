@@ -85,6 +85,7 @@
     "empty": "אין התראות עדיין",
     "debtAdded": "{{name}} הוסיף/ה חוב של {{amount}} {{currency}}",
     "debtReduced": "{{name}} סימן/ה תשלום של {{amount}} {{currency}}",
+    "debtSimplified": "{{name}} פישט/ה חובות מעגליים — {{count}} חוב/ות בוטלו",
     "markAllRead": "סימון הכל כנקרא"
   },
   "settings": {
@@ -98,5 +99,20 @@
     "deleteConfirmTitle": "למחוק את החשבון?",
     "deleteConfirmMessage": "פעולה זו תמחק לצמיתות את הפרופיל, כל העסקאות וההתראות. לא ניתן לבטל פעולה זו.",
     "deleteConfirmButton": "כן, מחק את החשבון שלי"
+  },
+  "advanced": {
+    "title": "הצעות חכמות",
+    "noSuggestions": "אין הצעות כרגע",
+    "noSuggestionsDesc": "הצעות יופיעו כאשר יזוהו חובות מעגליים בינך לבין אנשי הקשר שלך",
+    "circularDebt": "פישוט חובות מעגליים",
+    "circularDebtDesc": "למשתמשים אלה יש חובות מעגליים שניתן לפשט",
+    "currentDebts": "חובות נוכחיים",
+    "suggestedDebts": "פישוט מוצע",
+    "owes": "חייב/ת",
+    "apply": "החל פישוט",
+    "applying": "מחיל...",
+    "applied": "הוחל! ✓",
+    "eliminates": "מבטל {{count}} חוב/ות",
+    "involvedUsers": "משתמשים מעורבים"
   }
 }

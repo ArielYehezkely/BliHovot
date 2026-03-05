@@ -108,6 +108,17 @@ const seedTransactions: Transaction[] = [
     created_by: DEV_USER_ID,
     created_at: '2026-03-03T12:00:00Z',
   },
+  {
+    id: 'tx-0006',
+    debtor_id: 'friend-carol-0000-0000-0000-000000000003',
+    creditor_id: 'friend-alice-0000-0000-0000-000000000001',
+    amount: 100,
+    currency: 'ILS',
+    description: 'Shared vacation expenses',
+    type: 'debt',
+    created_by: 'friend-alice-0000-0000-0000-000000000001',
+    created_at: '2026-03-02T15:00:00Z',
+  },
 ]
 
 // ─── Seed notifications ───

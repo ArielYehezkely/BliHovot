@@ -85,6 +85,7 @@
     "empty": "No notifications yet",
     "debtAdded": "{{name}} added a debt of {{amount}} {{currency}}",
     "debtReduced": "{{name}} marked a payment of {{amount}} {{currency}}",
+    "debtSimplified": "{{name}} simplified circular debts — {{count}} debt(s) eliminated",
     "markAllRead": "Mark all as read"
   },
   "settings": {
@@ -98,5 +99,20 @@
     "deleteConfirmTitle": "Delete Account?",
     "deleteConfirmMessage": "This will permanently delete your profile, all transactions, and notifications. This action cannot be undone.",
     "deleteConfirmButton": "Yes, Delete My Account"
+  },
+  "advanced": {
+    "title": "Smart Suggestions",
+    "noSuggestions": "No suggestions right now",
+    "noSuggestionsDesc": "Suggestions will appear when circular debts are detected among you and your contacts",
+    "circularDebt": "Circular Debt Simplification",
+    "circularDebtDesc": "These users have circular debts that can be simplified",
+    "currentDebts": "Current Debts",
+    "suggestedDebts": "Suggested Simplification",
+    "owes": "owes",
+    "apply": "Apply Simplification",
+    "applying": "Applying...",
+    "applied": "Applied! ✓",
+    "eliminates": "Eliminates {{count}} debt(s)",
+    "involvedUsers": "Involved Users"
   }
 }

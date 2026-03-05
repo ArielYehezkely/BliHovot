@@ -18,6 +18,7 @@ import { HomePage } from './pages/HomePage'
 import { UserDetailPage } from './pages/UserDetailPage'
 import { NotificationsPage } from './pages/NotificationsPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { AdvancedPage } from './pages/AdvancedPage'
 import './locales/i18n'
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -258,6 +259,14 @@ function App() {
           element={
             <AuthGuard>
               <SettingsPage />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/advanced"
+          element={
+            <AuthGuard>
+              <AdvancedPage />
             </AuthGuard>
           }
         />

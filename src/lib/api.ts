@@ -33,6 +33,12 @@ export const getTransactionsBetween = impl.getTransactionsBetween
 export const getContactsWithBalances = impl.getContactsWithBalances
 export const calculateNetBalance = impl.calculateNetBalance
 
+// ── Group Transactions ──
+export const getGroupTransactions = impl.getGroupTransactions
+
+// ── Debt Simplification Notifications ──
+export const notifyDebtSimplification = impl.notifyDebtSimplification
+
 // ── Notifications ──
 export const getNotifications = impl.getNotifications
 export const markNotificationRead = impl.markNotificationRead

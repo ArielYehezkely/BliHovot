@@ -286,6 +286,45 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
   }
 }
 
+// ============ GROUP TRANSACTIONS (for debt simplification) ============
+
+export async function getGroupTransactions(userIds: string[]): Promise<Transaction[]> {
+  return mockDb.transactions
+    .filter((t) => userIds.includes(t.debtor_id) && userIds.includes(t.creditor_id))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+// ============ DEBT SIMPLIFICATION NOTIFICATIONS ============
+
+export async function notifyDebtSimplification(
+  initiatorId: string,
+  initiatorName: string,
+  cycleUserIds: string[],
+  currency: string,
+  debtsEliminated: number
+): Promise<void> {
+  const now = new Date().toISOString()
+  for (const userId of cycleUserIds) {
+    if (userId === initiatorId) continue // don't notify self
+    mockDb.notifications.push({
+      id: mockDb.generateNotifId(),
+      user_id: userId,
+      type: 'debt_simplified',
+      data: {
+        amount: 0,
+        currency,
+        from_user_id: initiatorId,
+        from_user_name: initiatorName,
+        description: 'Circular Debt Simplification',
+        involved_users: cycleUserIds,
+        debts_eliminated: debtsEliminated,
+      },
+      read: false,
+      created_at: now,
+    })
+  }
+}
+
 // ============ REALTIME (no-ops, return dummy channel objects) ============
 
 const dummyChannel = {
