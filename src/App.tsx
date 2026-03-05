@@ -7,10 +7,11 @@ import {
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { supabase, isSupabaseConfigured } from './lib/supabase'
-import { getProfile, subscribeToTransactions, subscribeToNotifications } from './lib/api'
+import { getProfile, getContactsWithBalances, getNotifications, subscribeToTransactions, subscribeToNotifications } from './lib/api'
 import { useAuthStore } from './stores/authStore'
 import type { Profile, Notification } from './types'
 import { useNotificationStore } from './stores/notificationStore'
+import { useContactsStore } from './stores/contactsStore'
 import { LoginPage } from './pages/LoginPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { HomePage } from './pages/HomePage'
@@ -70,6 +71,8 @@ function App() {
   const setProfile = useAuthStore((s) => s.setProfile)
   const setLoading = useAuthStore((s) => s.setLoading)
   const addNotification = useNotificationStore((s) => s.addNotification)
+  const setNotifications = useNotificationStore((s) => s.setNotifications)
+  const setContacts = useContactsStore((s) => s.setContacts)
   const [isInitialized, setIsInitialized] = useState(false)
 
   // Set initial direction
@@ -118,9 +121,14 @@ function App() {
 
           // Set up realtime subscriptions
           if (profile) {
-            txChannel = subscribeToTransactions(profile.id, () => {
+            txChannel = subscribeToTransactions(profile.id, async () => {
               // Refresh contacts when a new transaction comes in
-              // The HomePage will handle this via its own effect
+              try {
+                const contacts = await getContactsWithBalances(profile.id)
+                setContacts(contacts)
+              } catch (err) {
+                console.error('Failed to refresh contacts on realtime update:', err)
+              }
             })
 
             notifChannel = subscribeToNotifications(profile.id, (notif: Notification) => {
@@ -143,9 +151,31 @@ function App() {
 
     initAuth()
 
+    // Refresh data when app comes back to foreground
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        const { session, profile } = useAuthStore.getState()
+        if (session?.user?.id && profile) {
+          try {
+            const [contacts, notifs] = await Promise.all([
+              getContactsWithBalances(profile.id),
+              getNotifications(profile.id),
+            ])
+            setContacts(contacts)
+            setNotifications(notifs)
+          } catch (err) {
+            console.error('Failed to refresh data on visibility change:', err)
+          }
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     // On localhost we skip the Supabase auth listener entirely
     if (isLocalhost) {
-      return () => {}
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+      }
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -166,6 +196,7 @@ function App() {
     )
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       subscription.unsubscribe()
       if (txChannel) supabase.removeChannel(txChannel)
       if (notifChannel) supabase.removeChannel(notifChannel)
@@ -185,10 +216,18 @@ function App() {
     )
   }
 
+  // Redirect authenticated users away from login
+  const rootElement = (() => {
+    if (isLocalhost) return <Navigate to="/home" replace />
+    const { session, profile } = useAuthStore.getState()
+    if (session && profile) return <Navigate to="/home" replace />
+    return <LoginPage />
+  })()
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={isLocalhost ? <Navigate to="/home" replace /> : <LoginPage />} />
+        <Route path="/" element={rootElement} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route
           path="/home"

@@ -13,14 +13,12 @@ interface DebtFormProps {
 }
 
 export function DebtForm({ isOpen, onClose, onSubmit, type, defaultCurrency = 'ILS', contactName }: DebtFormProps) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState<string>(defaultCurrency)
   const [description, setDescription] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
-
-  const isHebrew = i18n.language === 'he'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,13 +54,13 @@ export function DebtForm({ isOpen, onClose, onSubmit, type, defaultCurrency = 'I
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5 w-full min-w-0">
         {/* Amount */}
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1.5">
             {t('debtForm.amountLabel')}
           </label>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full min-w-0">
             <input
               type="number"
               step="0.01"
@@ -70,18 +68,18 @@ export function DebtForm({ isOpen, onClose, onSubmit, type, defaultCurrency = 'I
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder={t('debtForm.amountPlaceholder')}
-              className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none text-lg font-semibold transition-all"
+              className="flex-1 min-w-0 px-3 py-3 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none text-lg font-semibold transition-all"
               dir="ltr"
               autoFocus
             />
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="px-3 py-3 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none font-medium bg-white transition-all"
+              className="shrink-0 w-16 px-2 py-3 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none font-medium bg-white transition-all text-center"
             >
               {CURRENCIES.map((c) => (
                 <option key={c.code} value={c.code}>
-                  {c.symbol} {isHebrew ? c.name_he : c.name_en}
+                  {c.symbol}
                 </option>
               ))}
             </select>

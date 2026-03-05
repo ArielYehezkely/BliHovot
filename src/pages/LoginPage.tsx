@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { signInWithGoogle, signInWithMicrosoft } from '../lib/api'
+import { signInWithGoogle } from '../lib/api'
 import { LanguageToggle } from '../components/LanguageToggle'
 
 export function LoginPage() {
@@ -11,14 +11,6 @@ export function LoginPage() {
       await signInWithGoogle()
     } catch (err) {
       console.error('Google sign-in failed:', err)
-    }
-  }
-
-  const handleMicrosoft = async () => {
-    try {
-      await signInWithMicrosoft()
-    } catch (err) {
-      console.error('Microsoft sign-in failed:', err)
     }
   }
 
@@ -72,20 +64,6 @@ export function LoginPage() {
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
             {t('auth.signInGoogle')}
-          </button>
-
-          {/* Microsoft */}
-          <button
-            onClick={handleMicrosoft}
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white shadow-md hover:shadow-lg border border-gray-100 font-medium text-lg text-text-primary transition-all active:scale-[0.98]"
-          >
-            <svg width="20" height="20" viewBox="0 0 21 21">
-              <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
-              <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
-              <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
-              <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
-            </svg>
-            {t('auth.signInMicrosoft')}
           </button>
         </motion.div>
 

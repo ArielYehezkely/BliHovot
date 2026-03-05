@@ -53,6 +53,13 @@ export function UserDetailPage() {
     loadData()
   }, [loadData])
 
+  // Refresh when page becomes visible again
+  useEffect(() => {
+    const handleFocus = () => { loadData() }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [loadData])
+
   const netBalances = profile?.id && otherUserId
     ? calculateNetBalance(transactions, profile.id, otherUserId)
     : []
@@ -148,22 +155,22 @@ export function UserDetailPage() {
       </div>
 
       {/* Action buttons */}
-      <div className="px-5 mt-4 flex gap-3">
+      <div className="px-5 mt-4 flex gap-3 overflow-hidden">
         <button
           onClick={() => setShowDebtForm(true)}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-coral to-coral-light text-white font-semibold shadow-md shadow-coral/20 active:scale-[0.98] transition-transform"
+          className="flex-1 min-w-0 flex items-center justify-center gap-2 py-3 px-3 rounded-2xl bg-gradient-to-r from-coral to-coral-light text-white font-semibold shadow-md shadow-coral/20 active:scale-[0.98] transition-transform text-sm"
         >
-          <Plus size={18} />
-          {t('userDetail.addDebt')}
+          <Plus size={16} className="shrink-0" />
+          <span className="truncate">{t('userDetail.addDebt')}</span>
         </button>
 
         {hasPositiveBalance && (
           <button
             onClick={() => setShowPaymentForm(true)}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-mint to-mint-light text-white font-semibold shadow-md shadow-mint/20 active:scale-[0.98] transition-transform"
+            className="flex-1 min-w-0 flex items-center justify-center gap-2 py-3 px-3 rounded-2xl bg-gradient-to-r from-mint to-mint-light text-white font-semibold shadow-md shadow-mint/20 active:scale-[0.98] transition-transform text-sm"
           >
-            <Minus size={18} />
-            {t('userDetail.markPayment')}
+            <Minus size={16} className="shrink-0" />
+            <span className="truncate">{t('userDetail.markPayment')}</span>
           </button>
         )}
       </div>

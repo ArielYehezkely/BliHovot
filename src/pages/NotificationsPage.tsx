@@ -36,6 +36,13 @@ export function NotificationsPage() {
     loadNotifications()
   }, [loadNotifications])
 
+  // Refresh when page becomes visible again
+  useEffect(() => {
+    const handleFocus = () => { loadNotifications() }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [loadNotifications])
+
   const handleMarkRead = async (id: string) => {
     markAsRead(id)
     try {

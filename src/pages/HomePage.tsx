@@ -37,6 +37,13 @@ export function HomePage() {
     loadContacts()
   }, [loadContacts])
 
+  // Refresh contacts when navigating back to this page
+  useEffect(() => {
+    const handleFocus = () => { loadContacts() }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [loadContacts])
+
   // Calculate totals grouped by currency
   const totals = contacts.reduce<{ youOwe: Record<string, number>; owedToYou: Record<string, number> }>(
     (acc, contact) => {
