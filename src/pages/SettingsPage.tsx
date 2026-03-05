@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { Settings, Globe, Coins, LogOut, Info } from 'lucide-react'
+import { Settings, Globe, Coins, LogOut, Info, Trash2 } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
-import { signOut, updateProfile } from '../lib/api'
+import { signOut, updateProfile, deleteAccount } from '../lib/api'
 import { CURRENCIES } from '../types'
 import { BottomNav } from '../components/BottomNav'
 import { Avatar } from '../components/Avatar'
+import { Modal } from '../components/Modal'
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation()
@@ -14,6 +15,8 @@ export function SettingsPage() {
   const setProfile = useAuthStore((s) => s.setProfile)
   const authSignOut = useAuthStore((s) => s.signOut)
   const [isSaving, setIsSaving] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const isHebrew = i18n.language === 'he'
 
@@ -52,6 +55,19 @@ export function SettingsPage() {
       window.location.href = '/'
     } catch (err) {
       console.error('Sign out failed:', err)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!profile?.id) return
+    setIsDeleting(true)
+    try {
+      await deleteAccount(profile.id)
+      authSignOut()
+      window.location.href = '/'
+    } catch (err) {
+      console.error('Delete account failed:', err)
+      setIsDeleting(false)
     }
   }
 
@@ -173,7 +189,47 @@ export function SettingsPage() {
           <LogOut size={18} />
           {t('auth.signOut')}
         </motion.button>
+
+        {/* Delete account */}
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          onClick={() => setShowDeleteConfirm(true)}
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-red-50 text-red-500 font-semibold hover:bg-red-100 transition-colors"
+        >
+          <Trash2 size={18} />
+          {t('settings.deleteAccount')}
+        </motion.button>
       </div>
+
+      {/* Delete confirmation modal */}
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title={t('settings.deleteConfirmTitle')}
+      >
+        <div className="space-y-4">
+          <p className="text-text-secondary text-sm">
+            {t('settings.deleteConfirmMessage')}
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="flex-1 py-3 rounded-2xl bg-gray-100 text-text-primary font-medium hover:bg-gray-200 transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              className="flex-1 py-3 rounded-2xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+            >
+              {isDeleting ? t('common.loading') : t('settings.deleteConfirmButton')}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <BottomNav />
     </div>

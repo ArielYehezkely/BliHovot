@@ -1,10 +1,37 @@
+import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { signInWithGoogle, signInWithMicrosoft } from '../lib/api'
+import { useAuthStore } from '../stores/authStore'
 import { LanguageToggle } from '../components/LanguageToggle'
+
+const IS_DEV = import.meta.env.DEV
 
 export function LoginPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const setSession = useAuthStore((s) => s.setSession)
+  const setLoading = useAuthStore((s) => s.setLoading)
+
+  const handleDevLogin = () => {
+    const fakeSession = {
+      access_token: 'dev-token',
+      refresh_token: 'dev-refresh',
+      expires_in: 999999,
+      token_type: 'bearer',
+      user: {
+        id: 'dev-user-00000000-0000-0000-0000-000000000000',
+        email: 'dev@localhost',
+        app_metadata: {},
+        user_metadata: { full_name: 'Dev User' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      },
+    } as any
+    setLoading(false)
+    setSession(fakeSession)
+    navigate('/onboarding')
+  }
 
   const handleGoogle = async () => {
     try {
@@ -33,22 +60,22 @@ export function LoginPage() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
-        className="w-full max-w-sm text-center"
+        className="w-full max-w-sm text-center gap-10 flex flex-col items-center"
       >
         {/* Logo / Brand */}
         <motion.div
           initial={{ scale: 0.8 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-          className="mb-8"
+          className="mb-12 gap-5 flex flex-col items-center"
         >
-          <div className="w-24 h-24 mx-auto mb-4 rounded-3xl bg-gradient-to-br from-coral to-coral-light shadow-lg shadow-coral/30 flex items-center justify-center">
-            <span className="text-4xl">💸</span>
+          <div className="w-28 h-28 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-coral to-coral-light shadow-lg shadow-coral/30 flex items-center justify-center">
+            <span className="text-5xl">💸</span>
           </div>
-          <h1 className="text-3xl font-bold text-text-primary mb-2">
+          <h1 className="text-4xl font-bold text-text-primary mb-3">
             {t('auth.title')}
           </h1>
-          <p className="text-text-secondary text-base">
+          <p className="text-text-secondary text-lg">
             {t('auth.subtitle')}
           </p>
         </motion.div>
@@ -58,12 +85,12 @@ export function LoginPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="space-y-3"
+          className="space-y-4 gap-5 flex flex-col items-center w-full"
         >
           {/* Google */}
           <button
             onClick={handleGoogle}
-            className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white shadow-md hover:shadow-lg border border-gray-100 font-medium text-text-primary transition-all active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white shadow-md hover:shadow-lg border border-gray-100 font-medium text-lg text-text-primary transition-all active:scale-[0.98]"
           >
             <svg width="20" height="20" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -77,7 +104,7 @@ export function LoginPage() {
           {/* Microsoft */}
           <button
             onClick={handleMicrosoft}
-            className="w-full flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white shadow-md hover:shadow-lg border border-gray-100 font-medium text-text-primary transition-all active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white shadow-md hover:shadow-lg border border-gray-100 font-medium text-lg text-text-primary transition-all active:scale-[0.98]"
           >
             <svg width="20" height="20" viewBox="0 0 21 21">
               <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
@@ -94,10 +121,23 @@ export function LoginPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="mt-8 text-xs text-text-muted"
+          className="mt-12 text-sm text-text-muted"
         >
           Track debts • Stay fair • Keep it fun ✌️
         </motion.p>
+
+        {/* Dev skip login */}
+        {IS_DEV && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            onClick={handleDevLogin}
+            className="mt-4 px-4 py-2 rounded-xl border-2 border-dashed border-gray-300 text-text-muted text-sm hover:border-coral hover:text-coral transition-colors"
+          >
+            🛠️ Skip Login (Dev)
+          </motion.button>
+        )}
       </motion.div>
     </div>
   )

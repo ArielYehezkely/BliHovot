@@ -29,6 +29,18 @@ export async function signOut() {
   if (error) throw error
 }
 
+export async function deleteAccount(userId: string) {
+  // Delete notifications
+  await supabase.from('notifications').delete().eq('user_id', userId)
+  // Delete transactions where user is debtor or creditor
+  await supabase.from('transactions').delete().or(`debtor_id.eq.${userId},creditor_id.eq.${userId}`)
+  // Delete profile
+  const { error: profileError } = await supabase.from('profiles').delete().eq('id', userId)
+  if (profileError) throw profileError
+  // Sign out (this also invalidates the session)
+  await supabase.auth.signOut()
+}
+
 // ============ PROFILES ============
 
 export async function getProfile(userId: string): Promise<Profile | null> {

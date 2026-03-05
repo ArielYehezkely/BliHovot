@@ -90,6 +90,10 @@
     "currency": "Default Currency",
     "notifications": "Push Notifications",
     "about": "About",
-    "version": "Version"
+    "version": "Version",
+    "deleteAccount": "Delete Account",
+    "deleteConfirmTitle": "Delete Account?",
+    "deleteConfirmMessage": "This will permanently delete your profile, all transactions, and notifications. This action cannot be undone.",
+    "deleteConfirmButton": "Yes, Delete My Account"
   }
 }

@@ -6,7 +6,7 @@ import {
   Navigate,
 } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { supabase } from './lib/supabase'
+import { supabase, isSupabaseConfigured } from './lib/supabase'
 import { getProfile, subscribeToTransactions, subscribeToNotifications } from './lib/api'
 import { useAuthStore } from './stores/authStore'
 import { useNotificationStore } from './stores/notificationStore'
@@ -65,10 +65,24 @@ function App() {
     let txChannel: ReturnType<typeof subscribeToTransactions> | null = null
     let notifChannel: ReturnType<typeof subscribeToNotifications> | null = null
 
+    const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+      Promise.race([
+        promise,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Supabase request timed out')), ms)
+        ),
+      ])
+
     const initAuth = async () => {
       setLoading(true)
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        if (!isSupabaseConfigured) {
+          console.warn('Supabase not configured – skipping auth init')
+          setSession(null)
+          setProfile(null)
+          return
+        }
+        const { data: { session } } = await withTimeout(supabase.auth.getSession(), 10000)
         setSession(session)
 
         if (session?.user?.id) {

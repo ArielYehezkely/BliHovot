@@ -90,6 +90,10 @@
     "currency": "מטבע ברירת מחדל",
     "notifications": "התראות Push",
     "about": "אודות",
-    "version": "גרסה"
+    "version": "גרסה",
+    "deleteAccount": "מחיקת חשבון",
+    "deleteConfirmTitle": "למחוק את החשבון?",
+    "deleteConfirmMessage": "פעולה זו תמחק לצמיתות את הפרופיל, כל העסקאות וההתראות. לא ניתן לבטל פעולה זו.",
+    "deleteConfirmButton": "כן, מחק את החשבון שלי"
   }
 }

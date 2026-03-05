@@ -63,19 +63,19 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-gradient-to-br from-mint/5 via-background to-lavender/5">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-gradient-to-br from-mint/5 via-background to-lavender/5 p-20">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm"
+        className="w-full max-w-sm flex flex-col items-center gap-10 bg-white/80 backdrop-blur-sm rounded-3xl p-20 shadow-lg"
       >
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">{t('onboarding.title')}</h1>
-          <p className="text-text-secondary mt-1">{t('onboarding.subtitle')}</p>
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold">{t('onboarding.title')}</h1>
+          <p className="text-text-secondary mt-2 text-base">{t('onboarding.subtitle')}</p>
         </div>
 
         {/* Step indicator */}
-        <div className="flex justify-center gap-2 mb-8">
+        <div className="flex justify-center gap-3 mb-10">
           {(['phone', 'profile'] as Step[]).map((s, i) => (
             <div
               key={s}
@@ -91,10 +91,10 @@ export function OnboardingPage() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="space-y-4"
+            className="space-y-6 gap-10 flex flex-col items-center p-5"
           >
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 {t('onboarding.phoneLabel')}
               </label>
               <input
@@ -102,7 +102,7 @@ export function OnboardingPage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder={t('onboarding.phonePlaceholder')}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none text-lg transition-all"
+                className="w-full px-4 py-4 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none text-lg transition-all"
                 dir="ltr"
                 autoFocus
               />
@@ -111,7 +111,7 @@ export function OnboardingPage() {
             <button
               onClick={handlePhoneSubmit}
               disabled={!phone}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-coral to-coral-light text-white font-semibold shadow-lg shadow-coral/25 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-coral to-coral-light text-white font-semibold text-lg shadow-lg shadow-coral/25 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {t('common.next') || 'Next'}
             </button>
@@ -123,28 +123,28 @@ export function OnboardingPage() {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="space-y-4"
+            className="space-y-6 gap-10 flex flex-col items-center p-5"
           >
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 {t('onboarding.nameLabel')}
               </label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none transition-all"
+                className="w-full px-4 py-4 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none text-lg transition-all"
                 autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1.5">
+              <label className="block text-sm font-medium text-text-secondary mb-2">
                 {t('onboarding.currencyLabel')}
               </label>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none bg-white transition-all"
+                className="w-full px-4 py-4 rounded-xl border border-gray-200 focus:border-coral focus:ring-2 focus:ring-coral/20 outline-none bg-white text-lg transition-all"
               >
                 {CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -156,7 +156,7 @@ export function OnboardingPage() {
             <button
               onClick={handleComplete}
               disabled={isLoading || !displayName.trim()}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-mint to-mint-light text-white font-semibold shadow-lg shadow-mint/25 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="py-4 rounded-2xl bg-gradient-to-r from-mint to-mint-light text-white font-semibold text-lg shadow-lg shadow-mint/25 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               {isLoading ? t('common.loading') : t('onboarding.completeButton')}
             </button>
