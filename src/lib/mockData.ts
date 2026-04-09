@@ -2,7 +2,7 @@
  * Mock in-memory database for local development.
  * Provides seed data so the app is usable without Supabase.
  */
-import type { Profile, Transaction, Notification } from '../types'
+import type { Profile, Transaction, Notification, DebtRequest } from '../types'
 
 // ─── Dev user (must match DEV_PROFILE in App.tsx) ───
 const DEV_USER_ID = 'dev-user-00000000-0000-0000-0000-000000000000'
@@ -158,8 +158,10 @@ export const mockDb = {
   profiles: [...seedProfiles],
   transactions: [...seedTransactions],
   notifications: [...seedNotifications],
+  debtRequests: [] as DebtRequest[],
   _nextTxId: 100,
   _nextNotifId: 100,
+  _nextRequestId: 100,
 
   generateTxId(): string {
     return `tx-mock-${String(this._nextTxId++).padStart(4, '0')}`
@@ -167,5 +169,9 @@ export const mockDb = {
 
   generateNotifId(): string {
     return `notif-mock-${String(this._nextNotifId++).padStart(4, '0')}`
+  },
+
+  generateRequestId(): string {
+    return `req-mock-${String(this._nextRequestId++).padStart(4, '0')}`
   },
 }

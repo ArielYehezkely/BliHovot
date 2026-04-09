@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, Check, CheckCheck } from 'lucide-react'
@@ -8,6 +8,8 @@ import {
   getNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+  approveDebtRequest,
+  rejectDebtRequest,
 } from '../lib/api'
 import { getCurrencySymbol } from '../types'
 import { BottomNav } from '../components/BottomNav'
@@ -21,6 +23,8 @@ export function NotificationsPage() {
     markAsRead,
     markAllAsRead,
   } = useNotificationStore()
+
+  const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set())
 
   const loadNotifications = useCallback(async () => {
     if (!profile?.id) return
@@ -59,6 +63,44 @@ export function NotificationsPage() {
       await markAllNotificationsRead(profile.id)
     } catch (err) {
       console.error('Failed to mark all notifications as read:', err)
+    }
+  }
+
+  const handleApproveRequest = async (notifId: string, requestId: string) => {
+    if (!profile?.id) return
+    setProcessingRequests((prev) => new Set(prev).add(requestId))
+    try {
+      await approveDebtRequest(requestId, profile.id)
+      markAsRead(notifId)
+      await markNotificationRead(notifId)
+      await loadNotifications()
+    } catch (err) {
+      console.error('Failed to approve debt request:', err)
+    } finally {
+      setProcessingRequests((prev) => {
+        const next = new Set(prev)
+        next.delete(requestId)
+        return next
+      })
+    }
+  }
+
+  const handleRejectRequest = async (notifId: string, requestId: string) => {
+    if (!profile?.id) return
+    setProcessingRequests((prev) => new Set(prev).add(requestId))
+    try {
+      await rejectDebtRequest(requestId, profile.id)
+      markAsRead(notifId)
+      await markNotificationRead(notifId)
+      await loadNotifications()
+    } catch (err) {
+      console.error('Failed to reject debt request:', err)
+    } finally {
+      setProcessingRequests((prev) => {
+        const next = new Set(prev)
+        next.delete(requestId)
+        return next
+      })
     }
   }
 
@@ -108,12 +150,23 @@ export function NotificationsPage() {
                 >
                   <div className="flex items-start gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                      notif.type === 'debt_added' ? 'bg-coral/10' : notif.type === 'debt_simplified' ? 'bg-purple-100' : 'bg-mint/10'
+                      notif.type === 'debt_added' ? 'bg-coral/10'
+                        : notif.type === 'debt_simplified' ? 'bg-purple-100'
+                        : notif.type === 'debt_request' ? 'bg-yellow/10'
+                        : notif.type === 'debt_request_approved' ? 'bg-mint/10'
+                        : notif.type === 'debt_request_rejected' ? 'bg-coral/10'
+                        : 'bg-mint/10'
                     }`}>
                       {notif.type === 'debt_added' ? (
                         <span className="text-sm">💸</span>
                       ) : notif.type === 'debt_simplified' ? (
                         <span className="text-sm">🔄</span>
+                      ) : notif.type === 'debt_request' ? (
+                        <span className="text-sm">🤝</span>
+                      ) : notif.type === 'debt_request_approved' ? (
+                        <span className="text-sm">✅</span>
+                      ) : notif.type === 'debt_request_rejected' ? (
+                        <span className="text-sm">❌</span>
                       ) : (
                         <span className="text-sm">✅</span>
                       )}
@@ -131,6 +184,24 @@ export function NotificationsPage() {
                               name: notif.data.from_user_name,
                               count: notif.data.debts_eliminated ?? 0,
                             })
+                          : notif.type === 'debt_request'
+                          ? t('notifications.debtRequest', {
+                              name: notif.data.from_user_name,
+                              amount: notif.data.amount.toFixed(2),
+                              currency: getCurrencySymbol(notif.data.currency),
+                            })
+                          : notif.type === 'debt_request_approved'
+                          ? t('notifications.debtRequestApproved', {
+                              name: notif.data.from_user_name,
+                              amount: notif.data.amount.toFixed(2),
+                              currency: getCurrencySymbol(notif.data.currency),
+                            })
+                          : notif.type === 'debt_request_rejected'
+                          ? t('notifications.debtRequestRejected', {
+                              name: notif.data.from_user_name,
+                              amount: notif.data.amount.toFixed(2),
+                              currency: getCurrencySymbol(notif.data.currency),
+                            })
                           : t('notifications.debtReduced', {
                               name: notif.data.from_user_name,
                               amount: notif.data.amount.toFixed(2),
@@ -142,6 +213,31 @@ export function NotificationsPage() {
                         <p className="text-xs text-text-muted mt-0.5 truncate">
                           {notif.data.description}
                         </p>
+                      )}
+                      {/* Approve/Reject buttons for pending debt requests */}
+                      {notif.type === 'debt_request' && !notif.read && notif.data.request_id && (
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleApproveRequest(notif.id, notif.data.request_id!)
+                            }}
+                            disabled={processingRequests.has(notif.data.request_id)}
+                            className="flex-1 py-1.5 px-3 rounded-xl bg-mint/10 text-mint-dark text-xs font-semibold hover:bg-mint/20 transition-colors disabled:opacity-50"
+                          >
+                            {processingRequests.has(notif.data.request_id) ? '...' : t('notifications.approve')}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRejectRequest(notif.id, notif.data.request_id!)
+                            }}
+                            disabled={processingRequests.has(notif.data.request_id)}
+                            className="flex-1 py-1.5 px-3 rounded-xl bg-coral/10 text-coral-dark text-xs font-semibold hover:bg-coral/20 transition-colors disabled:opacity-50"
+                          >
+                            {processingRequests.has(notif.data.request_id) ? '...' : t('notifications.reject')}
+                          </button>
+                        </div>
                       )}
                       <p className="text-xs text-text-muted mt-1">
                         {new Date(notif.created_at).toLocaleDateString(i18n.language, {

@@ -41,6 +41,12 @@ export const getGroupBalances = impl.getGroupBalances
 // ── Debt Simplification Notifications ──
 export const notifyDebtSimplification = impl.notifyDebtSimplification
 
+// ── Debt Requests ──
+export const createDebtRequest = impl.createDebtRequest
+export const getPendingDebtRequests = impl.getPendingDebtRequests
+export const approveDebtRequest = impl.approveDebtRequest
+export const rejectDebtRequest = impl.rejectDebtRequest
+
 // ── Notifications ──
 export const getNotifications = impl.getNotifications
 export const markNotificationRead = impl.markNotificationRead

@@ -29,7 +29,7 @@ export interface TransactionWithProfiles extends Transaction {
 export interface Notification {
   id: string
   user_id: string
-  type: 'debt_added' | 'debt_reduced' | 'debt_simplified'
+  type: 'debt_added' | 'debt_reduced' | 'debt_simplified' | 'debt_request' | 'debt_request_approved' | 'debt_request_rejected'
   data: {
     amount: number
     currency: string
@@ -39,9 +39,23 @@ export interface Notification {
     /** debt_simplified specific fields */
     involved_users?: string[]
     debts_eliminated?: number
+    /** debt_request specific fields */
+    request_id?: string
   }
   read: boolean
   created_at: string
+}
+
+export interface DebtRequest {
+  id: string
+  creditor_id: string
+  debtor_id: string
+  amount: number
+  currency: string
+  description: string
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+  resolved_at: string | null
 }
 
 export interface NetBalance {

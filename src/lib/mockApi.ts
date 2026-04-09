@@ -4,7 +4,7 @@
  */
 import { mockDb } from './mockData'
 import { normalizePhone } from './phoneUtils'
-import type { Profile, Transaction, Notification, ContactUser } from '../types'
+import type { Profile, Transaction, Notification, ContactUser, DebtRequest } from '../types'
 
 // ============ AUTH (no-ops on localhost) ============
 
@@ -372,6 +372,120 @@ export async function notifyDebtSimplification(
       },
       read: false,
       created_at: now,
+    })
+  }
+}
+
+// ============ DEBT REQUESTS ============
+
+export async function createDebtRequest(
+  creditorId: string,
+  debtorId: string,
+  amount: number,
+  currency: string,
+  description: string
+): Promise<DebtRequest> {
+  const request: DebtRequest = {
+    id: mockDb.generateRequestId(),
+    creditor_id: creditorId,
+    debtor_id: debtorId,
+    amount,
+    currency,
+    description,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    resolved_at: null,
+  }
+  mockDb.debtRequests.push(request)
+
+  // Notify the debtor
+  const creditor = mockDb.profiles.find((p) => p.id === creditorId)
+  if (creditor) {
+    mockDb.notifications.push({
+      id: mockDb.generateNotifId(),
+      user_id: debtorId,
+      type: 'debt_request',
+      data: {
+        amount,
+        currency,
+        from_user_id: creditorId,
+        from_user_name: creditor.display_name,
+        description,
+        request_id: request.id,
+      },
+      read: false,
+      created_at: request.created_at,
+    })
+  }
+
+  return request
+}
+
+export async function getPendingDebtRequests(userId: string): Promise<DebtRequest[]> {
+  return mockDb.debtRequests
+    .filter((r) => r.debtor_id === userId && r.status === 'pending')
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+}
+
+export async function approveDebtRequest(requestId: string, userId: string): Promise<void> {
+  const request = mockDb.debtRequests.find(
+    (r) => r.id === requestId && r.debtor_id === userId && r.status === 'pending'
+  )
+  if (!request) throw new Error('Request not found')
+
+  request.status = 'approved'
+  request.resolved_at = new Date().toISOString()
+
+  // Create the actual transaction
+  await addDebt(request.debtor_id, request.creditor_id, request.amount, request.currency, request.description, userId)
+
+  // Notify the creditor
+  const debtor = mockDb.profiles.find((p) => p.id === userId)
+  if (debtor) {
+    mockDb.notifications.push({
+      id: mockDb.generateNotifId(),
+      user_id: request.creditor_id,
+      type: 'debt_request_approved',
+      data: {
+        amount: request.amount,
+        currency: request.currency,
+        from_user_id: userId,
+        from_user_name: debtor.display_name,
+        description: request.description,
+        request_id: requestId,
+      },
+      read: false,
+      created_at: new Date().toISOString(),
+    })
+  }
+}
+
+export async function rejectDebtRequest(requestId: string, userId: string): Promise<void> {
+  const request = mockDb.debtRequests.find(
+    (r) => r.id === requestId && r.debtor_id === userId && r.status === 'pending'
+  )
+  if (!request) throw new Error('Request not found')
+
+  request.status = 'rejected'
+  request.resolved_at = new Date().toISOString()
+
+  // Notify the creditor
+  const debtor = mockDb.profiles.find((p) => p.id === userId)
+  if (debtor) {
+    mockDb.notifications.push({
+      id: mockDb.generateNotifId(),
+      user_id: request.creditor_id,
+      type: 'debt_request_rejected',
+      data: {
+        amount: request.amount,
+        currency: request.currency,
+        from_user_id: userId,
+        from_user_name: debtor.display_name,
+        description: request.description,
+        request_id: requestId,
+      },
+      read: false,
+      created_at: new Date().toISOString(),
     })
   }
 }

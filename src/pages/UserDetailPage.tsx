@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ArrowRight, TrendingDown, TrendingUp, Plus, Minus, ChevronDown } from 'lucide-react'
+import { ArrowLeft, ArrowRight, TrendingDown, TrendingUp, Plus, Minus, ChevronDown, UserPlus } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import {
   getTransactionsBetween,
@@ -10,6 +10,7 @@ import {
   addDebt,
   markPayment,
   getBalanceWith,
+  createDebtRequest,
 } from '../lib/api'
 import type { Transaction, Profile } from '../types'
 import { getCurrencySymbol } from '../types'
@@ -33,6 +34,7 @@ export function UserDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [showDebtForm, setShowDebtForm] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const [showRequestForm, setShowRequestForm] = useState(false)
 
   const isRtl = i18n.language === 'he'
   const BackArrow = isRtl ? ArrowRight : ArrowLeft
@@ -101,6 +103,12 @@ export function UserDetailPage() {
     // User (creditor) marks that the other user (debtor) has paid
     await markPayment(otherUserId, profile.id, amount, currency, description, profile.id)
     await loadData()
+  }
+
+  const handleDebtRequest = async (amount: number, currency: string, description: string) => {
+    if (!profile?.id || !otherUserId) return
+    // User (creditor) claims the other user (debtor) owes them — requires approval
+    await createDebtRequest(profile.id, otherUserId, amount, currency, description)
   }
 
   if (isLoading) {
@@ -185,6 +193,14 @@ export function UserDetailPage() {
         >
           <Plus size={16} className="shrink-0" />
           <span className="truncate">{t('userDetail.addDebt')}</span>
+        </button>
+
+        <button
+          onClick={() => setShowRequestForm(true)}
+          className="flex-1 min-w-0 flex items-center justify-center gap-2 py-3 px-3 rounded-2xl bg-gradient-to-r from-lavender to-lavender-light text-white font-semibold shadow-md shadow-lavender/20 active:scale-[0.98] transition-transform text-sm"
+        >
+          <UserPlus size={16} className="shrink-0" />
+          <span className="truncate">{t('userDetail.requestDebt')}</span>
         </button>
 
         {hasPositiveBalance && (
@@ -294,6 +310,16 @@ export function UserDetailPage() {
         onClose={() => setShowPaymentForm(false)}
         onSubmit={handleMarkPayment}
         type="payment"
+        defaultCurrency={profile?.preferred_currency}
+        contactName={otherUser.display_name}
+      />
+
+      {/* Debt Request Form Modal */}
+      <DebtForm
+        isOpen={showRequestForm}
+        onClose={() => setShowRequestForm(false)}
+        onSubmit={handleDebtRequest}
+        type="request"
         defaultCurrency={profile?.preferred_currency}
         contactName={otherUser.display_name}
       />

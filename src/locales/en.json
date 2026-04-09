@@ -61,6 +61,7 @@
   "userDetail": {
     "debtHistory": "History",
     "addDebt": "I owe them",
+    "requestDebt": "They owe me",
     "markPayment": "Mark payment received",
     "noHistory": "No transactions yet",
     "youOweThem": "You owe them",
@@ -79,7 +80,9 @@
     "descriptionLabel": "What's it for?",
     "descriptionPlaceholder": "Dinner, coffee, tickets...",
     "submitDebt": "Add Debt",
-    "submitPayment": "Mark as Paid"
+    "submitPayment": "Mark as Paid",
+    "requestTitle": "Request Debt",
+    "submitRequest": "Send Request"
   },
   "notifications": {
     "title": "Notifications",
@@ -87,6 +90,11 @@
     "debtAdded": "{{name}} added a debt of {{amount}} {{currency}}",
     "debtReduced": "{{name}} marked a payment of {{amount}} {{currency}}",
     "debtSimplified": "{{name}} simplified circular debts — {{count}} debt(s) eliminated",
+    "debtRequest": "{{name}} claims you owe them {{amount}} {{currency}}",
+    "debtRequestApproved": "{{name}} approved your debt request of {{amount}} {{currency}}",
+    "debtRequestRejected": "{{name}} rejected your debt request of {{amount}} {{currency}}",
+    "approve": "Approve",
+    "reject": "Reject",
     "markAllRead": "Mark all as read"
   },
   "settings": {

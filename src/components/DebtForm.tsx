@@ -7,7 +7,7 @@ interface DebtFormProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (amount: number, currency: string, description: string) => Promise<void>
-  type: 'debt' | 'payment'
+  type: 'debt' | 'payment' | 'request'
   defaultCurrency?: string
   contactName?: string
 }
@@ -30,7 +30,7 @@ export function DebtForm({ isOpen, onClose, onSubmit, type, defaultCurrency = 'I
       return
     }
 
-    if (!description.trim() && type === 'debt') {
+    if (!description.trim() && (type === 'debt' || type === 'request')) {
       setError('Please add a description')
       return
     }
@@ -50,7 +50,9 @@ export function DebtForm({ isOpen, onClose, onSubmit, type, defaultCurrency = 'I
 
   const title = type === 'debt'
     ? `${t('debtForm.title')}${contactName ? ` — ${contactName}` : ''}`
-    : `${t('debtForm.paymentTitle')}${contactName ? ` — ${contactName}` : ''}`
+    : type === 'request'
+      ? `${t('debtForm.requestTitle')}${contactName ? ` — ${contactName}` : ''}`
+      : `${t('debtForm.paymentTitle')}${contactName ? ` — ${contactName}` : ''}`
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
@@ -112,14 +114,18 @@ export function DebtForm({ isOpen, onClose, onSubmit, type, defaultCurrency = 'I
           className={`w-full py-3.5 rounded-2xl font-semibold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 ${
             type === 'debt'
               ? 'bg-gradient-to-r from-coral to-coral-light shadow-coral/25'
-              : 'bg-gradient-to-r from-mint to-mint-light shadow-mint/25'
+              : type === 'request'
+                ? 'bg-gradient-to-r from-lavender to-lavender-light shadow-lavender/25'
+                : 'bg-gradient-to-r from-mint to-mint-light shadow-mint/25'
           }`}
         >
           {isSubmitting
             ? t('common.loading')
             : type === 'debt'
               ? t('debtForm.submitDebt')
-              : t('debtForm.submitPayment')}
+              : type === 'request'
+                ? t('debtForm.submitRequest')
+                : t('debtForm.submitPayment')}
         </button>
       </form>
     </Modal>

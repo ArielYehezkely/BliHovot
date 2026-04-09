@@ -61,6 +61,7 @@
   "userDetail": {
     "debtHistory": "היסטוריה",
     "addDebt": "אני חייב להם",
+    "requestDebt": "הם חייבים לי",
     "markPayment": "סימון תשלום שהתקבל",
     "noHistory": "אין עסקאות עדיין",
     "youOweThem": "אתה חייב להם",
@@ -79,7 +80,9 @@
     "descriptionLabel": "בשביל מה?",
     "descriptionPlaceholder": "ארוחת ערב, קפה, כרטיסים...",
     "submitDebt": "הוספת חוב",
-    "submitPayment": "סימון כשולם"
+    "submitPayment": "סימון כשולם",
+    "requestTitle": "בקשת חוב",
+    "submitRequest": "שליחת בקשה"
   },
   "notifications": {
     "title": "התראות",
@@ -87,6 +90,11 @@
     "debtAdded": "{{name}} הוסיף/ה חוב של {{amount}} {{currency}}",
     "debtReduced": "{{name}} סימן/ה תשלום של {{amount}} {{currency}}",
     "debtSimplified": "{{name}} פישט/ה חובות מעגליים — {{count}} חוב/ות בוטלו",
+    "debtRequest": "{{name}} טוען/ת שאתה חייב/ת להם {{amount}} {{currency}}",
+    "debtRequestApproved": "{{name}} אישר/ה את בקשת החוב שלך בסך {{amount}} {{currency}}",
+    "debtRequestRejected": "{{name}} דחה/תה את בקשת החוב שלך בסך {{amount}} {{currency}}",
+    "approve": "אישור",
+    "reject": "דחייה",
     "markAllRead": "סימון הכל כנקרא"
   },
   "settings": {

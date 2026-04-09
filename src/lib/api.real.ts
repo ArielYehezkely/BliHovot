@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { normalizePhone } from './phoneUtils'
-import type { Profile, Transaction, Notification, ContactUser } from '../types'
+import type { Profile, Transaction, Notification, ContactUser, DebtRequest } from '../types'
 
 // ============ AUTH ============
 
@@ -392,6 +392,140 @@ export async function notifyDebtSimplification(
 
   const { error } = await supabase.from('notifications').insert(notifications)
   if (error) throw error
+}
+
+// ============ DEBT REQUESTS ============
+
+export async function createDebtRequest(
+  creditorId: string,
+  debtorId: string,
+  amount: number,
+  currency: string,
+  description: string
+): Promise<DebtRequest> {
+  const { data, error } = await supabase
+    .from('debt_requests')
+    .insert({
+      creditor_id: creditorId,
+      debtor_id: debtorId,
+      amount,
+      currency,
+      description,
+      status: 'pending',
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+
+  // Get creditor name for notification
+  const creditor = await getProfile(creditorId)
+
+  // Notify the debtor about the request
+  await supabase.from('notifications').insert({
+    user_id: debtorId,
+    type: 'debt_request',
+    data: {
+      amount,
+      currency,
+      from_user_id: creditorId,
+      from_user_name: creditor?.display_name ?? 'User',
+      description,
+      request_id: data.id,
+    },
+    read: false,
+  })
+
+  return data
+}
+
+export async function getPendingDebtRequests(userId: string): Promise<DebtRequest[]> {
+  const { data, error } = await supabase
+    .from('debt_requests')
+    .select('*')
+    .eq('debtor_id', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data ?? []
+}
+
+export async function approveDebtRequest(requestId: string, userId: string): Promise<void> {
+  // Fetch the request
+  const { data: request, error: fetchError } = await supabase
+    .from('debt_requests')
+    .select('*')
+    .eq('id', requestId)
+    .eq('debtor_id', userId)
+    .eq('status', 'pending')
+    .single()
+
+  if (fetchError || !request) throw fetchError ?? new Error('Request not found')
+
+  // Update status to approved
+  const { error: updateError } = await supabase
+    .from('debt_requests')
+    .update({ status: 'approved', resolved_at: new Date().toISOString() })
+    .eq('id', requestId)
+
+  if (updateError) throw updateError
+
+  // Create the actual transaction (debtor approves, so created_by = debtor)
+  await addDebt(request.debtor_id, request.creditor_id, request.amount, request.currency, request.description, userId)
+
+  // Notify the creditor that the request was approved
+  const debtor = await getProfile(userId)
+  await supabase.from('notifications').insert({
+    user_id: request.creditor_id,
+    type: 'debt_request_approved',
+    data: {
+      amount: request.amount,
+      currency: request.currency,
+      from_user_id: userId,
+      from_user_name: debtor?.display_name ?? 'User',
+      description: request.description,
+      request_id: requestId,
+    },
+    read: false,
+  })
+}
+
+export async function rejectDebtRequest(requestId: string, userId: string): Promise<void> {
+  // Fetch the request
+  const { data: request, error: fetchError } = await supabase
+    .from('debt_requests')
+    .select('*')
+    .eq('id', requestId)
+    .eq('debtor_id', userId)
+    .eq('status', 'pending')
+    .single()
+
+  if (fetchError || !request) throw fetchError ?? new Error('Request not found')
+
+  // Update status to rejected
+  const { error: updateError } = await supabase
+    .from('debt_requests')
+    .update({ status: 'rejected', resolved_at: new Date().toISOString() })
+    .eq('id', requestId)
+
+  if (updateError) throw updateError
+
+  // Notify the creditor that the request was rejected
+  const debtor = await getProfile(userId)
+  await supabase.from('notifications').insert({
+    user_id: request.creditor_id,
+    type: 'debt_request_rejected',
+    data: {
+      amount: request.amount,
+      currency: request.currency,
+      from_user_id: userId,
+      from_user_name: debtor?.display_name ?? 'User',
+      description: request.description,
+      request_id: requestId,
+    },
+    read: false,
+  })
 }
 
 // ============ REALTIME ============
