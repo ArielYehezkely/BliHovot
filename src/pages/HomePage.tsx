@@ -120,7 +120,7 @@ export function HomePage() {
 
       {/* Contact list */}
       <div className="px-5 mt-4">
-        {isLoading ? (
+        {isLoading && !hasDebts ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 rounded-full border-3 border-coral border-t-transparent animate-spin" />
           </div>
