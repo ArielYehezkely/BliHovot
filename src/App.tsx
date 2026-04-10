@@ -66,6 +66,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function RootRedirect() {
+  const session = useAuthStore((s) => s.session)
+  const profile = useAuthStore((s) => s.profile)
+
+  if (isLocalhost) return <Navigate to="/home" replace />
+  if (session && profile) return <Navigate to="/home" replace />
+  return <LoginPage />
+}
+
 function App() {
   const { i18n } = useTranslation()
   const setSession = useAuthStore((s) => s.setSession)
@@ -217,18 +226,10 @@ function App() {
     )
   }
 
-  // Redirect authenticated users away from login
-  const rootElement = (() => {
-    if (isLocalhost) return <Navigate to="/home" replace />
-    const { session, profile } = useAuthStore.getState()
-    if (session && profile) return <Navigate to="/home" replace />
-    return <LoginPage />
-  })()
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={rootElement} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route
           path="/home"
