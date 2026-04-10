@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS transactions (
 );
 
 -- 3. Balances table (materialized net balances, updated by trigger)
+-- Single canonical row per user-pair: user_id < other_user_id.
+-- Amount is from user_id's perspective:
+--   positive = other_user_id owes user_id
+--   negative = user_id owes other_user_id
 CREATE TABLE IF NOT EXISTS balances (
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   other_user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -38,7 +42,8 @@ CREATE TABLE IF NOT EXISTS balances (
   amount NUMERIC NOT NULL DEFAULT 0,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (user_id, other_user_id, currency),
-  CONSTRAINT different_balance_parties CHECK (user_id != other_user_id)
+  CONSTRAINT different_balance_parties CHECK (user_id != other_user_id),
+  CONSTRAINT canonical_pair_order CHECK (user_id < other_user_id)
 );
 
 -- 4. Notifications table
@@ -116,11 +121,11 @@ CREATE POLICY "Users can create valid transactions"
 -- Transactions: No UPDATE or DELETE (append-only)
 -- (No policies created for UPDATE/DELETE means they're blocked by default with RLS enabled)
 
--- Balances: users can read their own rows, trigger handles writes
+-- Balances: users can read rows where they are either side of the pair
 CREATE POLICY "Users can view their own balances"
   ON balances FOR SELECT
   TO authenticated
-  USING (auth.uid() = user_id);
+  USING (auth.uid() = user_id OR auth.uid() = other_user_id);
 
 -- Notifications: users can only see their own
 CREATE POLICY "Users can view their own notifications"
@@ -197,26 +202,32 @@ CREATE OR REPLACE FUNCTION update_balances_on_transaction()
 RETURNS TRIGGER AS $$
 DECLARE
   delta NUMERIC;
+  low_id UUID;
+  high_id UUID;
+  sign_factor NUMERIC;
 BEGIN
-  -- For debt: debtor owes creditor → negative for debtor, positive for creditor
-  -- For payment: reduces debt → positive for debtor, negative for creditor
+  -- delta = how much more the creditor is owed after this transaction
   IF NEW.type = 'debt' THEN
     delta := NEW.amount;
   ELSE
     delta := -NEW.amount;
   END IF;
 
-  -- Update debtor's view: debtor → creditor (negative = user owes other)
-  INSERT INTO balances (user_id, other_user_id, currency, amount, updated_at)
-  VALUES (NEW.debtor_id, NEW.creditor_id, NEW.currency, -delta, NOW())
-  ON CONFLICT (user_id, other_user_id, currency)
-  DO UPDATE SET amount = balances.amount - delta, updated_at = NOW();
+  -- Canonical ordering: low_id < high_id (single row per pair)
+  IF NEW.creditor_id < NEW.debtor_id THEN
+    low_id := NEW.creditor_id;
+    high_id := NEW.debtor_id;
+    sign_factor := 1;   -- low_id is the creditor → positive = other owes me
+  ELSE
+    low_id := NEW.debtor_id;
+    high_id := NEW.creditor_id;
+    sign_factor := -1;  -- low_id is the debtor → negative = I owe other
+  END IF;
 
-  -- Update creditor's view: creditor → debtor (positive = other owes user)
   INSERT INTO balances (user_id, other_user_id, currency, amount, updated_at)
-  VALUES (NEW.creditor_id, NEW.debtor_id, NEW.currency, delta, NOW())
+  VALUES (low_id, high_id, NEW.currency, sign_factor * delta, NOW())
   ON CONFLICT (user_id, other_user_id, currency)
-  DO UPDATE SET amount = balances.amount + delta, updated_at = NOW();
+  DO UPDATE SET amount = balances.amount + sign_factor * delta, updated_at = NOW();
 
   RETURN NEW;
 END;
@@ -240,7 +251,14 @@ RETURNS TABLE (
 ) AS $$
 BEGIN
   RETURN QUERY
+  -- Canonical direction
   SELECT b.user_id, b.other_user_id, b.currency, b.amount
+  FROM balances b
+  WHERE b.user_id = ANY(p_user_ids)
+    AND b.other_user_id = ANY(p_user_ids)
+  UNION ALL
+  -- Reverse direction (flipped sign)
+  SELECT b.other_user_id, b.user_id, b.currency, -b.amount
   FROM balances b
   WHERE b.user_id = ANY(p_user_ids)
     AND b.other_user_id = ANY(p_user_ids);

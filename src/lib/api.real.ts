@@ -194,17 +194,26 @@ export async function getTransactionsBetween(
 // ============ NET BALANCES & CONTACTS ============
 
 export async function getContactsWithBalances(userId: string): Promise<ContactUser[]> {
-  // Read from the materialized balances table instead of summing all transactions
+  // Read from the materialized balances table (canonical: user_id < other_user_id)
+  // The current user can be on either side of the pair.
   const { data: rows, error } = await supabase
     .from('balances')
-    .select('other_user_id, currency, amount')
-    .eq('user_id', userId)
+    .select('user_id, other_user_id, currency, amount')
+    .or(`user_id.eq.${userId},other_user_id.eq.${userId}`)
 
   if (error) throw error
   if (!rows || rows.length === 0) return []
 
-  // Group by other_user_id
-  const otherIds = [...new Set(rows.map((r) => r.other_user_id))]
+  // Normalise: derive the counterpart ID and the amount from this user's perspective
+  const normalised = rows.map((r) => {
+    if (r.user_id === userId) {
+      return { otherId: r.other_user_id, currency: r.currency, amount: r.amount }
+    }
+    // user is on the other_user_id side → flip sign
+    return { otherId: r.user_id, currency: r.currency, amount: -r.amount }
+  })
+
+  const otherIds = [...new Set(normalised.map((r) => r.otherId))]
 
   // Fetch profiles for all other users in one query
   const { data: profiles, error: profilesError } = await supabase
@@ -218,21 +227,21 @@ export async function getContactsWithBalances(userId: string): Promise<ContactUs
 
   // Build contact list
   const contactMap = new Map<string, ContactUser>()
-  for (const row of rows) {
+  for (const row of normalised) {
     if (Math.abs(row.amount) < 0.01) continue
-    const p = profileMap.get(row.other_user_id)
+    const p = profileMap.get(row.otherId)
     if (!p) continue
 
-    if (!contactMap.has(row.other_user_id)) {
-      contactMap.set(row.other_user_id, {
-        id: row.other_user_id,
+    if (!contactMap.has(row.otherId)) {
+      contactMap.set(row.otherId, {
+        id: row.otherId,
         display_name: p.display_name,
         avatar_url: p.avatar_url,
         phone_number: p.phone_number,
         net_balances: [],
       })
     }
-    contactMap.get(row.other_user_id)!.net_balances.push({
+    contactMap.get(row.otherId)!.net_balances.push({
       currency: row.currency,
       amount: row.amount,
     })
@@ -277,20 +286,25 @@ export function calculateNetBalance(
 /**
  * Get the net balance between two users from the materialized balances table.
  * Returns the balance from userId's perspective.
+ * The canonical row has user_id < other_user_id, so we may need to flip the sign.
  */
 export async function getBalanceWith(
   userId: string,
   otherUserId: string
 ): Promise<{ currency: string; amount: number }[]> {
+  // Always query with canonical ordering (lower UUID first)
+  const [lowId, highId] = userId < otherUserId ? [userId, otherUserId] : [otherUserId, userId]
+  const flip = userId !== lowId  // true when userId is on the other_user_id side
+
   const { data, error } = await supabase
     .from('balances')
     .select('currency, amount')
-    .eq('user_id', userId)
-    .eq('other_user_id', otherUserId)
+    .eq('user_id', lowId)
+    .eq('other_user_id', highId)
 
   if (error) throw error
   return (data ?? [])
-    .map((r) => ({ currency: r.currency, amount: Number(r.amount) }))
+    .map((r) => ({ currency: r.currency, amount: flip ? -Number(r.amount) : Number(r.amount) }))
     .filter((b) => Math.abs(b.amount) > 0.01)
 }
 
