@@ -174,7 +174,7 @@ export function SettingsPage() {
             <span className="font-medium text-text-primary">{t('settings.about')}</span>
           </div>
           <p className="text-sm text-text-muted mt-2">
-            BliHovot v1.0.0 — {t('settings.version')}
+            Blihovot version — v1.0.1
           </p>
         </motion.div>
 

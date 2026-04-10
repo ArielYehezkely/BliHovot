@@ -69,9 +69,26 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function RootRedirect() {
   const session = useAuthStore((s) => s.session)
   const profile = useAuthStore((s) => s.profile)
+  const isLoading = useAuthStore((s) => s.isLoading)
 
   if (isLocalhost) return <Navigate to="/home" replace />
+
+  // While auth is still loading, show a loading spinner instead of the login page
+  if (isLoading) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-3xl bg-gradient-to-br from-coral to-coral-light shadow-lg shadow-coral/30 flex items-center justify-center">
+            <span className="text-3xl">💸</span>
+          </div>
+          <div className="w-8 h-8 mx-auto rounded-full border-3 border-coral border-t-transparent animate-spin" />
+        </div>
+      </div>
+    )
+  }
+
   if (session && profile) return <Navigate to="/home" replace />
+  if (session && !profile) return <Navigate to="/onboarding" replace />
   return <LoginPage />
 }
 
@@ -144,6 +161,14 @@ function App() {
             notifChannel = subscribeToNotifications(profile.id, (notif: Notification) => {
               addNotification(notif)
             })
+
+            // Load existing notifications
+            try {
+              const notifs = await getNotifications(profile.id)
+              setNotifications(notifs)
+            } catch (err) {
+              console.error('Failed to load initial notifications:', err)
+            }
 
             // Apply saved language preference
             if (profile.language && profile.language !== i18n.language) {
